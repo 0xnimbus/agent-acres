@@ -105,7 +105,11 @@ async function sendLink(env, link) {
       html: `<p>Open this link to sign in to Agent Acres (it works for ${LINK_MINUTES} minutes):</p><p><a href="${link}">Sign in to Agent Acres</a></p><p style="color:#888">If you didn't ask for this, ignore this email.</p>`,
     }),
   });
-  return r.ok;
+  if (r.ok) return "";
+  // Pass Resend's own reason through (e.g. an unverified domain); it never contains the key.
+  let why = "";
+  try { const j = await r.json(); why = j.message || j.error || ""; } catch (_) {}
+  return "Resend said (" + r.status + "): " + String(why).replace(/[<>&]/g, "").slice(0, 200);
 }
 
 export default async function middleware(request) {
@@ -152,10 +156,10 @@ export default async function middleware(request) {
       const crossSite = site ? !["same-origin", "none"].includes(site) : (origin && origin !== "null" && origin !== url.origin);
       if (crossSite) return new Response("Forbidden", { status: 403 });
       const link = url.origin + "/auth?t=" + encodeURIComponent(await signed("link", env.secret, env.email, LINK_MINUTES * 60000));
-      const ok = await sendLink(env, link);
-      return ok
+      const problem = await sendLink(env, link);
+      return !problem
         ? page(env.email, "Sent. Check your inbox and open the link on this device.", true)
-        : page(env.email, "The email couldn't be sent. Check RESEND_API_KEY and MAIL_FROM in Vercel.", false, 502);
+        : page(env.email, "The email couldn't be sent. " + problem, false, 502);
     }
     if (await sessionOk()) return redirect("/");
     return page(env.email, "", false);
