@@ -264,6 +264,7 @@ const server = http.createServer((req, res) => {
 
   if (p.startsWith('/assets/')) return serveFile(res, ASSETS, decodeURIComponent(p.slice('/assets/'.length)));
   if (p === '/shared/reducer.js') return serveFile(res, path.join(ROOT, 'shared'), 'reducer.js');
+  if (p === '/lib/demo.js') return serveFile(res, path.join(ROOT, 'lib'), 'demo.js');
   return serveFile(res, PUBLIC, p === '/' ? 'index.html' : decodeURIComponent(p.slice(1)));
 });
 

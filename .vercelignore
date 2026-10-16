@@ -1,0 +1,8 @@
+# Uploaded by `vercel` from this PC. assets/ (your art pack) is deliberately NOT ignored:
+# it is served only behind the password in middleware.js.
+data/
+dist/
+node_modules/
+.git/
+test/
+*.log

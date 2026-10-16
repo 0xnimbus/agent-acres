@@ -74,22 +74,63 @@
   }
 
   // ---- stream ------------------------------------------------------------------
-  function connect() {
-    const es = new EventSource('/api/stream');
-    es.addEventListener('snapshot', (m) => {
-      state = JSON.parse(m.data);
-      clockOffset = state.serverTime - Date.now();
+  // Two transports: the local Node server streams over SSE; the hosted (Vercel)
+  // version has no long-lived process, so the page polls /api/events instead.
+  let polling = false;
+  function setSnapshot(snap) {
+    state = snap;
+    clockOffset = state.serverTime - Date.now();
+    setConn('ok', 'ONLINE');
+    renderAll();
+  }
+  function applyEvent(ev) {
+    if (!state) return;
+    AcresReducer.apply(state, ev);
+    World.onEvent(ev, state.agents[ev.agent]);
+    renderAll();
+    if (ev.type === 'task.done') toast(ev);
+  }
+
+  async function connect() {
+    let first = null;
+    try { first = await (await fetch('/api/state', { cache: 'no-store' })).json(); } catch { /* fall back to SSE */ }
+    if (first && first.transport === 'poll') { polling = true; setSnapshot(first); poll(); return; }
+    stream();
+  }
+
+  let cursor = 0;
+  async function poll() {
+    if (state && state.cursor != null && !cursor) cursor = state.cursor;
+    try {
+      const r = await fetch('/api/events?after=' + cursor, { cache: 'no-store' });
+      if (r.status === 401) { location.href = '/login'; return; }
+      const j = await r.json();
+      for (const ev of j.events || []) applyEvent(ev);
+      cursor = j.cursor;
       setConn('ok', 'ONLINE');
+    } catch { setConn('down', 'RECONNECTING'); }
+    setTimeout(poll, document.hidden ? 8000 : 2000);
+  }
+
+  // Client-side demo for the hosted version: simulated events never leave this browser.
+  let sim = null;
+  async function setDemoLocal(on) {
+    if (on && !sim) {
+      sim = AcresDemo.createSimulator((ev) => applyEvent(Object.assign({ id: 'demo-' + Math.random().toString(36).slice(2), ts: now(), demo: true }, ev)));
+      state.demo = true;
+      sim.start(state);
       renderAll();
-    });
-    es.addEventListener('event', (m) => {
-      if (!state) return;
-      const ev = JSON.parse(m.data);
-      AcresReducer.apply(state, ev);
-      World.onEvent(ev, state.agents[ev.agent]);
-      renderAll();
-      if (ev.type === 'task.done') toast(ev);
-    });
+    } else if (!on && sim) {
+      sim.stop(); sim = null;
+      const snap = await (await fetch('/api/state', { cache: 'no-store' })).json();
+      cursor = snap.cursor; setSnapshot(snap);
+    }
+  }
+
+  function stream() {
+    const es = new EventSource('/api/stream');
+    es.addEventListener('snapshot', (m) => setSnapshot(JSON.parse(m.data)));
+    es.addEventListener('event', (m) => applyEvent(JSON.parse(m.data)));
     es.addEventListener('pool', (m) => {
       if (!state) return;
       state.pool = JSON.parse(m.data);
@@ -107,6 +148,7 @@
   function setConn(cls, text) { const c = $('conn'); c.className = 'conn ' + cls; c.textContent = text; }
 
   $('demoBtn').addEventListener('click', async () => {
+    if (polling) return setDemoLocal(!(state && state.demo));
     await fetch('/api/demo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ on: !(state && state.demo) }) });
   });
   document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
@@ -126,7 +168,9 @@
     if (star) {
       const stars = Number(star.dataset.n);
       const cur = state.ratings[id] || 0;
-      fetch('/api/rate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, stars: stars === cur ? 0 : stars }) });
+      const next = stars === cur ? 0 : stars;
+      fetch('/api/rate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, stars: next }) })
+        .then((r) => { if (r.ok && polling) { if (next) state.ratings[id] = next; else delete state.ratings[id]; renderLists(); } });
     }
   });
 
