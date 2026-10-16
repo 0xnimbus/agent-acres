@@ -34,7 +34,7 @@ const Sprites = (() => {
       roles[role] = m.sprites && m.sprites[role] ? fromManifestSprite(sheets, m.sprites[role]) : placeholder.roles[role];
     }
     const fps = Object.assign({ idle: 2, work: 6, walk: 8 }, m.characterFps || {});
-    const looks = (m.characters || []).map((c) => ({
+    const looks = (m.characters || []).filter((c) => sheets[c.sheet]).map((c) => ({
       idle: fromManifestSprite(sheets, { sheet: c.sheet, cell: c.cell, frames: c.idle, fps: fps.idle }),
       work: fromManifestSprite(sheets, { sheet: c.sheet, cell: c.cell, frames: c.work, fps: fps.work }),
       walk: fromManifestSprite(sheets, { sheet: c.sheet, cell: c.cell, frames: c.walk, fps: fps.walk }),

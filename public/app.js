@@ -156,13 +156,14 @@
 
   const portraits = new Map();
   function portrait(a, index) {
-    const key = a.id + ':' + a.look + ':' + a.role;
+    const key = a.id + ':' + World.lookOf(a) + ':' + a.role + ':' + a.color;
     if (!portraits.has(key)) portraits.set(key, World.frameCanvas(a, index, 36));
     return portraits.get(key);
   }
 
   function renderCrew() {
     $('crewCount').textContent = state.order.length;
+    World.assignLooks(state);
     const proj = (a) => (a.role === 'boss' ? 'HQ' : a.project || a.business || 'Other');
     const groups = [];
     for (const id of state.order) {

@@ -227,6 +227,7 @@ const World = (() => {
   }
 
   function sync(state) {
+    assignLooks(state);
     if (!layout || layout.key !== layoutKey(state)) {
       layout = buildLayout(state);
       ents.clear(); // rooms moved: respawn everyone at their spot
@@ -444,9 +445,35 @@ const World = (() => {
     }
   }
 
-  function lookFor(a, index) {
+  // Every worker gets its own sprite: explicit looks are kept, everyone else takes the
+  // next look nobody uses yet. Only once all looks are taken do repeats start (tinted).
+  let lookMap = new Map(), lookKey = '';
+  function assignLooks(state) {
+    const workers = state.order.filter((id) => state.agents[id].role !== 'boss');
+    const key = workers.map((id) => id + ':' + state.agents[id].look).join('|');
+    if (key === lookKey) return;
+    lookKey = key;
+    lookMap = new Map();
+    const n = art.looks.length;
+    const used = new Set();
+    for (const id of workers) {
+      const l = state.agents[id].look;
+      if (Number.isInteger(l) && !used.has(l)) { lookMap.set(id, l); used.add(l); }
+    }
+    let next = 0, extra = 0;
+    for (const id of workers) {
+      if (lookMap.has(id)) continue;
+      while (next < n && used.has(next)) next++;
+      // past the end: numbers above the last look wrap around, and lookFor tints them
+      const l = next < n ? next++ : n + extra++;
+      lookMap.set(id, l); used.add(l);
+    }
+  }
+  function lookIndex(a) { return lookMap.has(a.id) ? lookMap.get(a.id) : (Number.isInteger(a.look) ? a.look : 0); }
+
+  function lookFor(a) {
     const looks = art.looks;
-    const li = Number.isInteger(a.look) ? a.look : index;
+    const li = lookIndex(a);
     const base = looks[((li % looks.length) + looks.length) % looks.length];
     if (li < looks.length) return base;
     const key = li + ':' + (a.color || '');
@@ -780,7 +807,7 @@ const World = (() => {
     return h ? h + ':' + p(m) + ':' + p(ss) : p(m) + ':' + p(ss);
   }
 
-  return { init, onEvent, setSelected, fmtDur, frameCanvas, zoomAt, setAuto, getAuto, fx, moneyOf };
+  return { init, onEvent, setSelected, fmtDur, frameCanvas, zoomAt, setAuto, getAuto, fx, moneyOf, assignLooks, lookOf: lookIndex };
 
   // Draw a sprite frame into a small canvas, used for crew portraits.
   function frameCanvas(a, index, size) {

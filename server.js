@@ -45,7 +45,7 @@ function rosterEvents() {
     return (roster.agents || []).map((a, i) => ({
       id: 'roster-' + a.id, ts: 0, type: 'agent.hello', agent: a.id,
       name: a.name, business: a.business, project: a.project, model: a.model, role: a.role,
-      look: a.look != null ? a.look : i, color: a.color,
+      look: a.look, color: a.color,
     }));
   } catch (e) {
     console.warn('[acres] could not read roster ' + ROSTER_FILE + ': ' + e.message);

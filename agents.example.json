@@ -1,12 +1,12 @@
 {
-  "_comment": "Copy to agents.json (gitignored) to change your crew. project = which chamber the agent works in (agents sharing a project share a chamber). role \"boss\" puts the agent in the middle HQ chamber as the big mech. model is shown on the name plate. look = character look: with the Tech Dungeon pack 0-7 are enemy mobs (crawler, spider walker, robot, bug, four turrets) and 8-15 are the player characters; higher numbers reuse a look with a tint. color = name tag color.",
+  "_comment": "Copy to agents.json (gitignored) to change your crew. project = which chamber the agent works in (agents sharing a project share a chamber). role \"boss\" puts the agent in the middle HQ chamber as the big mech. model is shown on the name plate. look = optional character look: with the Tech Dungeon pack 0-7 are enemy mobs (crawler, spider walker, robot, bug, four turrets), 8 is the hover NPC and 9-16 are the player characters. Leave it out and each worker gets the next unused look; repeats (tinted with the agent's color) only start once every look is taken. color = name tag color.",
   "agents": [
     {"id": "boss", "name": "Boss", "business": "Runs the crew", "role": "boss", "model": "Claude Opus 5", "color": "#f5c542"},
-    {"id": "thumbnails", "name": "Thumbs", "business": "Fiverr thumbnail design", "project": "Fiverr Thumbnails", "look": 0, "color": "#f5a623"},
-    {"id": "clipping", "name": "Clipper", "business": "Fiverr long-form to shorts", "project": "Fiverr Clipping", "look": 1, "color": "#e94e77"},
-    {"id": "geo-agency", "name": "Geo", "business": "AI visibility (GEO) agency", "project": "GEO Agency", "look": 2, "color": "#4a90d9"},
-    {"id": "mobile-games", "name": "Pixel", "business": "Mobile game development", "project": "Mobile Games", "look": 3, "color": "#7ed321"},
-    {"id": "ebay", "name": "Bay", "business": "eBay resale", "project": "eBay Resale", "look": 4, "color": "#bd10e0"},
-    {"id": "fb-marketplace", "name": "Market", "business": "Facebook Marketplace resale", "project": "FB Marketplace", "look": 5, "color": "#50e3c2"}
+    {"id": "thumbnails", "name": "Thumbs", "business": "Fiverr thumbnail design", "project": "Fiverr Thumbnails", "color": "#f5a623"},
+    {"id": "clipping", "name": "Clipper", "business": "Fiverr long-form to shorts", "project": "Fiverr Clipping", "color": "#e94e77"},
+    {"id": "geo-agency", "name": "Geo", "business": "AI visibility (GEO) agency", "project": "GEO Agency", "color": "#4a90d9"},
+    {"id": "mobile-games", "name": "Pixel", "business": "Mobile game development", "project": "Mobile Games", "color": "#7ed321"},
+    {"id": "ebay", "name": "Bay", "business": "eBay resale", "project": "eBay Resale", "color": "#bd10e0"},
+    {"id": "fb-marketplace", "name": "Market", "business": "Facebook Marketplace resale", "project": "FB Marketplace", "color": "#50e3c2"}
   ]
 }
