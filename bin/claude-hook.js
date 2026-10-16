@@ -22,7 +22,7 @@ const path = require('path');
 let input = '';
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', (c) => { input += c; });
-process.stdin.on('end', () => { main().catch(() => {}).finally(() => process.exit(0)); });
+process.stdin.on('end', () => { main().catch(() => {}).finally(() => { process.exitCode = 0; }); });
 setTimeout(() => process.exit(0), 3000).unref();
 
 const PRETTY = { 'jobhunt.ai': 'JobHunt.ai', jobhuntai: 'JobHunt.ai', habitquest: 'Habix RPG', habixrpg: 'Habix RPG', 'habix-rpg': 'Habix RPG', 'agent-acres': 'Agent Acres' };
