@@ -6,3 +6,5 @@ agents.json
 node_modules/
 .env
 *.log
+
+.vercel
