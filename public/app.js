@@ -228,7 +228,7 @@
     const list = $('crew');
     list.innerHTML = groups.map((g) => '<li class="group">' + esc(g.name === 'HQ' ? '★ HQ' : g.name.toUpperCase()) + '</li>' + g.ids.map((id) => {
       const a = state.agents[id];
-      const lv = level(a.doneCount);
+      const lv = level(a.doneCount + (a.xp || 0));
       const timerStart = a.status === 'working' && a.task ? a.task.startedAt : a.since;
       const dj = World.dummyJob(a);
       const task = a.status === 'working' && a.task
@@ -300,6 +300,11 @@
   setInterval(() => {
     document.querySelectorAll('.crew .timer[data-since]').forEach((el) => { el.textContent = World.fmtDur(now() - Number(el.dataset.since)); });
   }, 1000);
+
+  // ?audit: publish the layout self-check on the page so it can be read from outside
+  if (new URLSearchParams(location.search).has('audit')) {
+    setInterval(() => { document.body.dataset.audit = JSON.stringify(World.audit()); }, 2000);
+  }
 
   connect();
 })();

@@ -51,6 +51,10 @@ function humanText(prompt) {
   return t.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 }
 
+const BOT_NAMES = ['Nova', 'Bolt', 'Echo', 'Rivet', 'Sable', 'Juno', 'Cipher', 'Orbit', 'Flux', 'Atlas', 'Vega', 'Pico',
+  'Quill', 'Spark', 'Zephyr', 'Onyx', 'Dash', 'Halo', 'Ion', 'Kilo', 'Lumen', 'Mira', 'Nyx', 'Opal', 'Pulse', 'Rook', 'Sol', 'Tango'];
+function botName(sid) { let h = 0; for (const c of String(sid)) h = (h * 31 + c.charCodeAt(0)) | 0; return BOT_NAMES[Math.abs(h) % BOT_NAMES.length]; }
+
 function threadName(prompt) {
   let t = clip(prompt, 200);
   for (let i = 0; i < 4; i++) t = t.replace(FILLER, '');
@@ -89,7 +93,7 @@ async function main() {
 
   // Every Claude thread (session) is its own worker in its project's room.
   const agent = slug('thread-' + sid.slice(0, 8)) || 'thread';
-  const hello = { type: 'agent.hello', agent, name: sess.name || 'New thread', project, business: 'Claude thread on ' + project, script: 'claude' };
+  const hello = { type: 'agent.hello', agent, name: botName(sid), project, business: sess.name ? 'Thread: ' + sess.name : 'Claude thread on ' + project, script: 'claude' };
 
   const events = [];
   switch (h.hook_event_name) {

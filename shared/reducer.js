@@ -71,6 +71,7 @@
     const a = ensureAgent(state, ev.agent, ts);
     if (ev.demo) a.demo = true;
     if (ev.type === 'agent.hello' && typeof ev.script === 'string') a.script = clip(ev.script, 40);
+    if (ev.type === 'agent.hello' && typeof ev.xp === 'number') a.xp = Math.max(0, Math.round(ev.xp));
     state.seq++;
     switch (ev.type) {
       case 'agent.hello':

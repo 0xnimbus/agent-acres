@@ -7,6 +7,8 @@
 const World = (() => {
   const T = 32;          // tile size in world pixels
   const POD_W = 4, POD_H = 3;
+  // Wall art reaches into the floor: side rails ~8px, the bottom wall 8px. Furniture stays clear.
+  const SIDE_IN = 10 / 32, BOTTOM_CLEAR = 0.35;
   const GAP_X = 5, GAP_Y = 5, MARGIN = 4;
   const WALK_SPEED = 70; // world px per second
   const HQ = 'HQ';
@@ -164,8 +166,8 @@ const World = (() => {
       } else {
         if (rr() < 0.6) cut(x, y, 1, 1);
         if (rr() < 0.6) cut(x + w - 1, y, 1, 1);
-        if (rr() < 0.5) cut(x, y + h - 1, 1, 1); else decor('pillar', x, y + h - 1);
-        if (rr() < 0.5) cut(x + w - 1, y + h - 1, 1, 1); else decor('pillar', x + w - 1, y + h - 1);
+        if (rr() < 0.5) cut(x, y + h - 1, 1, 1);
+        if (rr() < 0.5) cut(x + w - 1, y + h - 1, 1, 1);
       }
       // an alcove on an outer side that has no hallway
       const below = rooms.some((o) => o !== rm && o.c === rm.c && o.r === rm.r + 1);
@@ -179,12 +181,11 @@ const World = (() => {
           const ay = y + 1;
           const ax = side === 'left' ? x - 2 : x + w;
           fill(ax, ay, 2, Math.min(3, h - 1), 3);
-          decor('tank', ax + 0.5, ay - 0.7);
-          if (h - 1 >= 3) decor('console', ax + 0.5, ay + 1.8);
+          decor('tank', ax + 0.5, ay + 0.15);
         } else {
           const ax = x + 2 + Math.floor(rr() * (w - 7));
           fill(ax, y + h, 4, 2, 3);
-          decor('crate', ax, y + h + 0.8); decor('crateOpen', ax + 1, y + h + 0.8); decor('capsule', ax + 3, y + h + 0.8);
+          decor('crate', ax + 0.4, y + h + 0.55); decor('crateOpen', ax + 1.45, y + h + 0.55); decor('capsule', ax + 2.5, y + h + 0.55);
         }
       }
       // floor texture: desk platforms, a walkway stripe per pod row, vents and grates
@@ -222,27 +223,30 @@ const World = (() => {
       if (!rm.boss) {
         const tall = ['tank', 'tankGreen', 'tankEmpty', 'serverRack'];
         const small = ['console', 'capsule', 'crate', 'crateOpen', 'console', 'capsule'];
-        for (const [sx, side] of [[x + 0.15, 0], [x + w - 1.15, 1]]) {
+        // SIDE_IN keeps furniture off the side rails; nothing goes below BOTTOM_CLEAR
+        for (const [sx, side] of [[x + SIDE_IN, 0], [x + w - 1 - SIDE_IN, 1]]) {
           let yy = y + 1.1;
           decor(tall[Math.floor(rr() * tall.length)], sx, yy);
           yy += 2.2;
-          while (yy < y + h - 1.6) { decor(small[Math.floor(rr() * small.length)], sx, yy); yy += 1.25; }
+          const sideTile = side ? x + w - 1 : x;
+          const lim = floor[y + h - 1] && floor[y + h - 1][sideTile] ? y + h - BOTTOM_CLEAR : y + h - 1 - BOTTOM_CLEAR;
+          while (yy + 1 <= lim) { decor(small[Math.floor(rr() * small.length)], sx, yy); yy += 1.25; }
         }
       } else {
         // HQ: tanks and server racks down both walls, a command console row in front
         // of the boss, supply crates by the door
-        for (const sx of [x + 0.2, x + w - 1.2]) {
+        // HQ's bottom corners are cut, so the last floor row by the side walls ends a row early
+        for (const sx of [x + SIDE_IN, x + w - 1 - SIDE_IN]) {
           decor('tank', sx, y + 1.1);
           let yy = y + 3.3;
-          while (yy < y + h - 2.2) { decor('serverRack', sx, yy); yy += 1.1; }
-          decor('capsule', sx, y + h - 2.1);
+          while (yy + 1 <= y + h - 2 - BOTTOM_CLEAR) { decor('serverRack', sx, yy); yy += 1.1; }
         }
         decor('tankGreen', x + 1.3, y + 1.1);
         decor('tankGreen', x + w - 2.3, y + 1.1);
         const cx = x + w / 2;
         for (const dx of [-1.5, -0.5, 0.5]) decor('console', cx + dx, y + 3.75);
-        decor('crate', x + 1.4, y + h - 2.0); decor('crateOpen', x + 2.4, y + h - 2.0);
-        decor('crate', x + w - 3.4, y + h - 2.0); decor('capsule', x + w - 2.4, y + h - 2.0);
+        decor('crate', x + 2.35, y + h - 1 - BOTTOM_CLEAR - 0.05); decor('crateOpen', x + 3.4, y + h - 1 - BOTTOM_CLEAR - 0.05);
+        decor('crate', x + w - 4.4, y + h - 1 - BOTTOM_CLEAR - 0.05); decor('capsule', x + w - 3.35, y + h - 1 - BOTTOM_CLEAR - 0.05);
       }
       // wall panels: a row of small lit fixtures along the top wall
       rm.panels = [];
@@ -629,6 +633,15 @@ const World = (() => {
       const stripe = err ? R.stripeRed : rm.boss ? R.stripeYellow : R.stripeBlue;
       for (const c of rm.walk) blit(stripe, time, c.x * T, c.y * T);
     }
+    // room color wash, drawn with the floor so walls always sit on top of it
+    for (const rm of layout.rooms) {
+      const rgb = hexRgb(rm.color);
+      const wash = ctx.createLinearGradient(0, rm.y * T, 0, (rm.y + rm.h) * T);
+      wash.addColorStop(0, 'rgba(' + rgb + ',.13)');
+      wash.addColorStop(1, 'rgba(' + rgb + ',.04)');
+      ctx.fillStyle = wash;
+      for (let ty = rm.y; ty < rm.y + rm.h; ty++) for (let tx = rm.x; tx < rm.x + rm.w; tx++) if (isFloor(tx, ty)) ctx.fillRect(tx * T, ty * T, T, T);
+    }
     // soft shadow along the walls gives the rooms depth
     ctx.fillStyle = 'rgba(0,0,0,.28)';
     for (let y = 0; y < layout.hT; y++) for (let x = 0; x < layout.wT; x++) {
@@ -735,9 +748,19 @@ const World = (() => {
       ctx.fillStyle = g;
       ctx.fillRect(cx - 100, cy - 100, 200, 200);
     }
+    // What hangs on the top wall: only over tiles that really have top wall (not a doorway or a
+    // cut corner), and never overlapping something already hung there.
+    const hung = [];
+    const onWall = (px, pw) => {
+      for (let tx = Math.floor(px / T); tx <= Math.floor((px + pw - 1) / T); tx++) if (!isFloor(tx, rm.y) || isFloor(tx, rm.y - 1)) return false;
+      return true;
+    };
+    const free = (px, pw) => hung.every(([a, b]) => px + pw <= a || px >= b);
+    const hang = (px, pw) => { if (!onWall(px + 2, pw - 4) || !free(px, pw)) return false; hung.push([px, px + pw]); return true; };
+    for (const l of rm.lights || []) hung.push([l.x, l.x + T]);
     if (rm.boss) {
-      blit(anyWorking ? R.screenWork : R.screenIdle, time, x + T * 2.3, y - T + 2);
-      blit(anyWorking ? R.screenWork : R.screenIdle, time + 0.4, x + w - T * 2.3 - 64, y - T + 2);
+      if (hang(x + T * 2.3, 64)) blit(anyWorking ? R.screenWork : R.screenIdle, time, x + T * 2.3, y - T + 2);
+      if (hang(x + w - T * 2.3 - 64, 64)) blit(anyWorking ? R.screenWork : R.screenIdle, time + 0.4, x + w - T * 2.3 - 64, y - T + 2);
       // gold command emblem on the floor under the boss
       for (const id of rm.agents) {
         const pb = layout.pods[id];
@@ -752,16 +775,11 @@ const World = (() => {
     } else {
       for (const id of rm.agents) {
         const a = state.agents[id], p = layout.pods[id];
-        blit(busyLooking(a) ? R.wallMonitor : R.wallMonitorOff, time, p.desk.x + 16, y - T + 2, { offset: (p.px0 % 5) * 0.37 });
+        if (hang(p.desk.x + 16, T)) blit(busyLooking(a) ? R.wallMonitor : R.wallMonitorOff, time, p.desk.x + 16, y - T + 2, { offset: (p.px0 % 5) * 0.37 });
       }
     }
     // color wash on the floor and a neon strip along the top wall in the room's color
     const rgb = hexRgb(rm.color);
-    const wash = ctx.createLinearGradient(0, y, 0, y + h);
-    wash.addColorStop(0, 'rgba(' + rgb + ',.13)');
-    wash.addColorStop(1, 'rgba(' + rgb + ',.04)');
-    ctx.fillStyle = wash;
-    for (let ty = rm.y; ty < rm.y + rm.h; ty++) for (let tx = rm.x; tx < rm.x + rm.w; tx++) if (isFloor(tx, ty)) ctx.fillRect(tx * T, ty * T, T, T);
     const pulse = 0.75 + 0.25 * Math.sin(time * 2 + rm.x);
     ctx.save();
     // The strip runs along the floor just in front of the top wall (not on the wall art),
@@ -775,9 +793,23 @@ const World = (() => {
       ctx.fillRect(tx * T + inL, y + 8, T - inL - inR, 2);
     }
     ctx.restore();
+    ctx.font = '700 7px ui-monospace, Menlo, Consolas, monospace';
+    const signText = rm.boss ? '\u2605 HQ' : rm.name.toUpperCase();
+    const signW = ctx.measureText(signText).width + 8;
+    let best = null;
+    for (let tx = rm.x; tx < rm.x + rm.w; tx++) {
+      if (!isFloor(tx, rm.y) || isFloor(tx, rm.y - 1)) continue;
+      let end = tx; while (end + 1 < rm.x + rm.w && isFloor(end + 1, rm.y) && !isFloor(end + 1, rm.y - 1)) end++;
+      const span = { a: tx * T, b: (end + 1) * T };
+      const mid = (x + w / 2), score = (span.b - span.a) - Math.abs((span.a + span.b) / 2 - mid) * 0.2;
+      if (!best || score > best.score) best = Object.assign(span, { score });
+      tx = end;
+    }
+    const signX = best ? Math.round((best.a + best.b) / 2) : x + w / 2;
+    hung.push([signX - signW / 2 - 4, signX + signW / 2 + 4]);
     for (const pn of rm.panels || []) {
       if (!R.wallPanel) break;
-      blitFrame(R.wallPanel, pn.f % R.wallPanel.frames.length, pn.x, y - T - 14);
+      if (hang(pn.x, T)) blitFrame(R.wallPanel, pn.f % R.wallPanel.frames.length, pn.x, y - T - 14);
     }
     // wall lights with a pool of light below
     for (const l of rm.lights || []) {
@@ -792,7 +824,7 @@ const World = (() => {
     // room sign on the wall
     ctx.font = '700 7px ui-monospace, Menlo, Consolas, monospace';
     ctx.textAlign = 'center';
-    label(rm.boss ? '★ HQ' : rm.name.toUpperCase(), x + w / 2, y - T - 14, rm.boss ? '#f5c542' : rm.color, 'rgba(8,12,30,.9)');
+    label(signText, signX, y - T - 14, rm.boss ? '#f5c542' : rm.color, 'rgba(8,12,30,.9)');
   }
 
   function character(a, e, index, time) {
@@ -858,16 +890,25 @@ const World = (() => {
     if (!e.bubble || performance.now() >= e.bubble.until) return;
     const p = layout.pods[e.id];
     const x = Math.round(e.x), y = Math.round(e.y - (p.boss ? 62 : 34));
-    const t = e.bubble.text.length > 34 ? e.bubble.text.slice(0, 33) + '…' : e.bubble.text;
+    // wrap to at most 3 lines; the bubble grows to fit
     ctx.font = '500 6px system-ui, sans-serif';
-    const w = ctx.measureText(t).width + 8;
-    const bx = Math.round(Math.max(4, Math.min(layout.w - w - 4, x - w / 2))), by = y - 12;
+    const MAXW = 120, lines = [];
+    let cur = '';
+    for (const word of e.bubble.text.split(/\s+/)) {
+      const tryLine = cur ? cur + ' ' + word : word;
+      if (ctx.measureText(tryLine).width > MAXW && cur) { lines.push(cur); cur = word; } else cur = tryLine;
+    }
+    if (cur) lines.push(cur);
+    if (lines.length > 3) { lines.length = 3; lines[2] = lines[2].replace(/\s*\S*$/, '') + '…'; }
+    const w = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 8;
+    const bh = lines.length * 7 + 4;
+    const bx = Math.round(Math.max(4, Math.min(layout.w - w - 4, x - w / 2))), by = y - 2 - bh;
     ctx.fillStyle = e.bubble.dummy ? 'rgba(200,210,235,.82)' : '#f4f6fb';
-    roundRect(bx, by, w, 10, 3); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(x - 2, by + 10); ctx.lineTo(x + 2, by + 10); ctx.lineTo(x, by + 13); ctx.fill();
+    roundRect(bx, by, w, bh, 3); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x - 2, by + bh); ctx.lineTo(x + 2, by + bh); ctx.lineTo(x, by + bh + 3); ctx.fill();
     ctx.fillStyle = e.bubble.dummy ? '#4a5578' : '#1b1f33';
     ctx.textAlign = 'left';
-    ctx.fillText(t, bx + 4, by + 7.3);
+    lines.forEach((l, i) => ctx.fillText(l, bx + 4, by + 7.3 + i * 7));
   }
 
   function label(text, x, y, color, bg) {
@@ -945,7 +986,29 @@ const World = (() => {
     return h ? h + ':' + p(m) + ':' + p(ss) : p(m) + ':' + p(ss);
   }
 
-  return { init, onEvent, setSelected, fmtDur, frameCanvas, zoomAt, setAuto, getAuto, fx, moneyOf, dummyJob, isReal, assignLooks, lookOf: (a) => (pool[lookIndex(a)] ? pool[lookIndex(a)].key : '') + ':' + lookIndex(a) };
+  // Layout self-check: every piece of furniture must sit on floor and clear of wall art
+  // (side rails, bottom wall). Returns a list of problems; empty means nothing clips.
+  function audit() {
+    const out = [];
+    if (!layout || !art) return ['not ready: layout=' + !!layout + ' art=' + !!art];
+    const R = art.roles;
+    for (const rm of layout.rooms) for (const d of rm.decor) {
+      const spr = R[d.role]; if (!spr) continue;
+      const f = spr.frames[0];
+      const x0 = d.x + 2, x1 = d.x + f.w - 2, y0 = d.y + 2, y1 = d.y + f.h - 2;
+      for (let py = y0; py <= y1; py += 4) for (let px = x0; px <= x1; px += 4) {
+        const tx = Math.floor(px / T), ty = Math.floor(py / T), lx = px - tx * T, ly = py - ty * T;
+        const bad = !isFloor(tx, ty) ? 'off the floor'
+          : (!isFloor(tx - 1, ty) && lx < 8) ? 'on a left rail'
+          : (!isFloor(tx + 1, ty) && lx > T - 8) ? 'on a right rail'
+          : (!isFloor(tx, ty + 1) && ly > T - 9) ? 'on a bottom wall' : '';
+        if (bad) { out.push(rm.name + ': ' + d.role + ' ' + bad + ' at tile ' + (d.x / T - rm.x).toFixed(2) + ',' + (d.y / T - rm.y).toFixed(2) + ' (room ' + rm.w + 'x' + rm.h + ', pixel ' + (px - tx * T) + ',' + (py - ty * T) + ')'); px = x1 + 1; py = y1 + 1; }
+      }
+    }
+    return out;
+  }
+
+  return { init, onEvent, setSelected, audit, fmtDur, frameCanvas, zoomAt, setAuto, getAuto, fx, moneyOf, dummyJob, isReal, assignLooks, lookOf: (a) => (pool[lookIndex(a)] ? pool[lookIndex(a)].key : '') + ':' + lookIndex(a) };
 
   // Draw a sprite frame into a small canvas, used for crew portraits.
   function frameCanvas(a, index, size) {
