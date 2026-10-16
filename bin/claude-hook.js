@@ -25,7 +25,10 @@ process.stdin.on('data', (c) => { input += c; });
 process.stdin.on('end', () => { main().catch(() => {}).finally(() => { process.exitCode = 0; }); });
 setTimeout(() => process.exit(0), 3000).unref();
 
-const PRETTY = { 'jobhunt.ai': 'JobHunt.ai', jobhuntai: 'JobHunt.ai', habitquest: 'Habix RPG', habixrpg: 'Habix RPG', 'habix-rpg': 'Habix RPG', 'agent-acres': 'Agent Acres' };
+// Folder name -> room. Your job search folders all feed the Job Applications room.
+const PRETTY = { 'jobhunt.ai': 'Job Applications', jobhuntai: 'Job Applications', 'jobhunt': 'Job Applications', habitquest: 'Habix RPG', habixrpg: 'Habix RPG', 'habix-rpg': 'Habix RPG' };
+// Folders that never get a room (work on the station itself).
+const SKIP = new Set(['agent-acres']);
 const STATE_FILE = path.join(os.homedir(), '.agent-acres', 'sessions.json');
 const FILLER = /^(hey|hi|ok(ay)?|so|please|can you|could you|would you|i want( you)? to|i would like( you)? to|let'?s|now|also|and)\s+/i;
 
@@ -55,6 +58,7 @@ async function main() {
   let h = {};
   try { h = JSON.parse(input || '{}'); } catch { return; }
   const folder = path.basename(h.cwd || process.cwd());
+  if (!process.env.ACRES_PROJECT && SKIP.has(folder.toLowerCase())) return;
   const project = process.env.ACRES_PROJECT || PRETTY[folder.toLowerCase()] || folder;
   const sid = String(h.session_id || 'none');
 

@@ -15,6 +15,7 @@
     'task.fail',      // { agent, task?, error }
     'agent.idle',     // { agent, note? }
     'note',           // { agent, text }
+    'agent.remove',   // take a worker off the station: { agent } (its finished work stays in the history)
   ];
 
   const FEED_MAX = 200;
@@ -58,6 +59,14 @@
   }
 
   function apply(state, ev) {
+    if (ev.type === 'agent.remove') {
+      if (state.agents[ev.agent]) {
+        delete state.agents[ev.agent];
+        state.order = state.order.filter((id) => id !== ev.agent);
+        state.seq++;
+      }
+      return state;
+    }
     const ts = ev.ts || Date.now();
     const a = ensureAgent(state, ev.agent, ts);
     if (ev.demo) a.demo = true;

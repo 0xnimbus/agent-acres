@@ -7,6 +7,7 @@
     {"id": "geo-agency", "name": "Geo", "business": "AI visibility (GEO) agency", "project": "GEO Agency", "color": "#4a90d9"},
     {"id": "mobile-games", "name": "Pixel", "business": "Mobile game development", "project": "Mobile Games", "color": "#7ed321"},
     {"id": "ebay", "name": "Bay", "business": "eBay resale", "project": "eBay Resale", "color": "#bd10e0"},
-    {"id": "fb-marketplace", "name": "Market", "business": "Facebook Marketplace resale", "project": "FB Marketplace", "color": "#50e3c2"}
+    {"id": "fb-marketplace", "name": "Market", "business": "Facebook Marketplace resale", "project": "FB Marketplace", "color": "#50e3c2"},
+    {"id": "job-apps", "name": "Scout", "business": "Job applications", "project": "Job Applications", "color": "#ffd65a"}
   ]
 }

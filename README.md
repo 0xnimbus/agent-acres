@@ -83,6 +83,7 @@ Every event is a JSON object with a `type` and an `agent` id.
 | `task.fail` | `error` | red status, failure in the feed |
 | `agent.idle` | `note` | walks to the lounge |
 | `note` | `text` | a line in the live feed |
+| `agent.remove` | | takes the worker off the station (its finished work stays) |
 
 `ts` (ms since epoch) and `id` are optional; the server fills them in.
 
