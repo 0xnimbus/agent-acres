@@ -1,0 +1,16 @@
+{
+  "name": "agent-acres",
+  "version": "0.1.0",
+  "description": "A pixel-art office where you watch your AI agents work. Zero dependencies.",
+  "license": "MIT",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "demo": "node server.js --demo",
+    "art": "node bin/art.js",
+    "emit": "node bin/emit.js",
+    "test": "node test/reducer.test.js"
+  },
+  "engines": { "node": ">=18" }
+}

@@ -1,0 +1,43 @@
+{
+  "name": "Tech Dungeon Roguelite",
+  "credit": "Tech Dungeon Roguelite by Trevor Pupkin",
+  "url": "https://trevor-pupkin.itch.io/tech-dungeon-roguelite",
+  "_comment": "Coordinates only, no art. Run `npm run art -- <path to the pack folder>` to copy your licensed pack into assets/ next to this manifest. frames are [column, row] in units of cell.",
+  "scale": 2,
+  "sheets": {
+    "tiles": "tech-dungeon/tileset x1.png",
+    "props": "tech-dungeon/Props and Items/props and items x1.png",
+    "blue": "tech-dungeon/Players/players blue x1.png",
+    "red": "tech-dungeon/Players/players red x1.png",
+    "green": "tech-dungeon/Players/players green x1.png",
+    "grey": "tech-dungeon/Players/players grey x1.png"
+  },
+  "sprites": {
+    "floor":       { "sheet": "tiles", "cell": [32, 32], "frames": [[34, 1]] },
+    "floorAccent": { "sheet": "tiles", "cell": [32, 32], "frames": [[33, 1]] },
+    "floorVent":   { "sheet": "tiles", "cell": [32, 32], "frames": [[32, 2]] },
+    "wall":        { "sheet": "tiles", "cell": [32, 32], "frames": [[5, 10]] },
+    "wallTrim":    { "sheet": "tiles", "cell": [32, 32], "frames": [[5, 0]] },
+    "deskWork":    { "sheet": "props", "cell": [32, 32], "frames": [[0, 2], [1, 2], [2, 2], [3, 2]], "fps": 5 },
+    "deskIdle":    { "sheet": "props", "cell": [32, 32], "frames": [[0, 3]] },
+    "screenWork":  { "sheet": "props", "cell": [64, 32], "frames": [[0, 4], [1, 4], [2, 4], [3, 4]], "fps": 3 },
+    "screenIdle":  { "sheet": "props", "cell": [64, 32], "frames": [[0, 5]] },
+    "wallMonitor": { "sheet": "props", "cell": [32, 32], "frames": [[7, 0], [8, 0], [9, 0], [10, 0]], "fps": 2 },
+    "console":     { "sheet": "props", "cell": [32, 32], "frames": [[10, 2], [11, 2], [12, 2], [13, 2]], "fps": 3 },
+    "tank":        { "sheet": "props", "cell": [32, 64], "frames": [[0, 3], [1, 3], [2, 3], [3, 3]], "fps": 4 },
+    "crate":       { "sheet": "props", "cell": [32, 32], "frames": [[11, 6]] },
+    "crateOpen":   { "sheet": "props", "cell": [32, 32], "frames": [[13, 6]] },
+    "capsule":     { "sheet": "props", "cell": [32, 32], "frames": [[11, 7], [12, 7], [13, 7], [14, 7]], "fps": 2 }
+  },
+  "characters": [
+    { "sheet": "blue",  "cell": [32, 32], "idle": [[2, 0]], "work": [[3, 1], [4, 1]], "walk": [[5, 3], [6, 3], [7, 3], [8, 3]] },
+    { "sheet": "red",   "cell": [32, 32], "idle": [[2, 7]], "work": [[3, 8], [4, 8]], "walk": [[5, 10], [6, 10], [7, 10], [8, 10]] },
+    { "sheet": "green", "cell": [32, 32], "idle": [[2, 0]], "work": [[3, 1], [4, 1]], "walk": [[5, 3], [6, 3], [7, 3], [8, 3]] },
+    { "sheet": "grey",  "cell": [32, 32], "idle": [[2, 7]], "work": [[3, 8], [4, 8]], "walk": [[5, 10], [6, 10], [7, 10], [8, 10]] },
+    { "sheet": "red",   "cell": [32, 32], "idle": [[2, 0]], "work": [[3, 1], [4, 1]], "walk": [[5, 3], [6, 3], [7, 3], [8, 3]] },
+    { "sheet": "blue",  "cell": [32, 32], "idle": [[2, 7]], "work": [[3, 8], [4, 8]], "walk": [[5, 10], [6, 10], [7, 10], [8, 10]] },
+    { "sheet": "grey",  "cell": [32, 32], "idle": [[2, 0]], "work": [[3, 1], [4, 1]], "walk": [[5, 3], [6, 3], [7, 3], [8, 3]] },
+    { "sheet": "green", "cell": [32, 32], "idle": [[2, 7]], "work": [[3, 8], [4, 8]], "walk": [[5, 10], [6, 10], [7, 10], [8, 10]] }
+  ],
+  "characterFps": { "idle": 2, "work": 6, "walk": 8 }
+}

@@ -1,0 +1,8 @@
+# Paid / licensed art never goes in git. Plug it in locally with `npm run art`.
+assets/
+# Runtime data and your own crew
+data/
+agents.json
+node_modules/
+.env
+*.log

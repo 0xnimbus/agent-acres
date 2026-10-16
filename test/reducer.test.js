@@ -1,0 +1,25 @@
+'use strict';
+const assert = require('assert');
+const R = require('../shared/reducer');
+
+const s = R.emptyState();
+R.apply(s, { type: 'agent.hello', agent: 'ebay', name: 'Bay', business: 'eBay resale', ts: 1 });
+R.apply(s, { type: 'task.start', agent: 'ebay', title: 'List 5 items', ts: 1000 });
+assert.strictEqual(s.agents.ebay.status, 'working');
+R.apply(s, { type: 'task.progress', agent: 'ebay', note: 'photos', pct: 50, ts: 2000 });
+assert.strictEqual(s.agents.ebay.task.pct, 50);
+R.apply(s, { type: 'task.done', agent: 'ebay', result: '5 live', value: '$0', ts: 4000 });
+assert.strictEqual(s.agents.ebay.status, 'idle');
+assert.strictEqual(s.agents.ebay.doneCount, 1);
+assert.strictEqual(s.agents.ebay.workMs, 3000);
+assert.strictEqual(s.done[0].title, 'List 5 items');
+assert.strictEqual(s.done[0].ms, 3000);
+R.apply(s, { type: 'task.start', agent: 'new-agent', title: 'x', ts: 5000 });
+assert.deepStrictEqual(s.order, ['ebay', 'new-agent']);
+R.apply(s, { type: 'task.fail', agent: 'new-agent', error: 'boom', ts: 6000 });
+assert.strictEqual(s.agents['new-agent'].status, 'error');
+assert.ok(R.validate({ type: 'nope', agent: 'a' }));
+assert.ok(R.validate({ type: 'task.start', agent: 'a' }));
+assert.ok(R.validate({ type: 'note', agent: 'bad id!' }));
+assert.strictEqual(R.validate({ type: 'note', agent: 'ok-id', text: 'hi' }), null);
+console.log('reducer tests passed');

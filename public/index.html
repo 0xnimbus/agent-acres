@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent Acres</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <div class="brand"><span class="logo">&#9638;</span> Agent Acres</div>
+    <div class="stats" id="stats"></div>
+    <div class="right">
+      <span class="conn" id="conn">connecting&hellip;</span>
+      <button id="demoBtn" title="Simulate all agents (demo events are never saved)">Demo: off</button>
+    </div>
+  </header>
+  <main>
+    <section class="floor"><canvas id="world"></canvas><div class="banner" id="banner" hidden></div></section>
+    <aside>
+      <div class="panel">
+        <h2>Crew <span class="count" id="crewCount"></span></h2>
+        <ul id="crew" class="crew"></ul>
+      </div>
+      <div class="panel grow">
+        <div class="tabs">
+          <button class="tab active" data-tab="feed">Live feed</button>
+          <button class="tab" data-tab="done">Finished work <span class="count" id="doneCount"></span></button>
+        </div>
+        <ul id="feed" class="feed"></ul>
+        <ul id="done" class="feed" hidden></ul>
+      </div>
+    </aside>
+  </main>
+  <footer id="credit"></footer>
+  <script src="/shared/reducer.js"></script>
+  <script src="/sprites.js"></script>
+  <script src="/world.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

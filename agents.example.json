@@ -1,0 +1,11 @@
+{
+  "_comment": "Copy to agents.json (gitignored) to change your crew. look = character look index (0-7 with the Tech Dungeon pack; higher numbers reuse a look with a tint). color = name tag color.",
+  "agents": [
+    { "id": "thumbnails",     "name": "Thumbs",  "business": "Fiverr thumbnail design",          "look": 0, "color": "#f5a623" },
+    { "id": "clipping",       "name": "Clipper", "business": "Fiverr long-form to shorts",       "look": 1, "color": "#e94e77" },
+    { "id": "geo-agency",     "name": "Geo",     "business": "AI visibility (GEO) agency",       "look": 2, "color": "#4a90d9" },
+    { "id": "mobile-games",   "name": "Pixel",   "business": "Mobile game development",          "look": 3, "color": "#7ed321" },
+    { "id": "ebay",           "name": "Bay",     "business": "eBay resale",                      "look": 4, "color": "#bd10e0" },
+    { "id": "fb-marketplace", "name": "Market",  "business": "Facebook Marketplace resale",      "look": 5, "color": "#50e3c2" }
+  ]
+}
