@@ -15,6 +15,8 @@
     <div class="right">
       <div class="badge" id="commander"></div>
       <span class="conn" id="conn">connecting&hellip;</span>
+      <button id="camBtn" title="Director camera: follows whoever just did something">CAM: FREE</button>
+      <button id="tiktokBtn" title="Vertical 9:16 view for recording TikToks">TIKTOK</button>
       <button id="demoBtn" title="Simulate all agents (demo events are never saved)">DEMO: OFF</button>
     </div>
   </header>
@@ -29,6 +31,12 @@
       <canvas id="world"></canvas>
       <div class="live"><span class="dot"></span>LIVE</div>
       <div class="banner" id="banner" hidden></div>
+      <div class="tt" id="tt">
+        <div class="hook" id="hook" spellcheck="false" title="Click to edit the hook text"></div>
+        <div class="ticker"><span class="money" id="ttMoney">$0</span><span id="ttStats"></span></div>
+        <div class="toasts" id="toasts"></div>
+        <button class="exit" id="ttExit">EXIT</button>
+      </div>
     </section>
     <aside class="right-col">
       <div class="panel grow">

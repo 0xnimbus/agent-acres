@@ -36,10 +36,11 @@ const World = (() => {
     let drag = null;
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
+      director.auto = false;
       const r = canvas.getBoundingClientRect();
       zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.15 : 1 / 1.15);
     }, { passive: false });
-    canvas.addEventListener('mousedown', (e) => { drag = { x: e.clientX, y: e.clientY, px: cam.px, py: cam.py, moved: false }; });
+    canvas.addEventListener('mousedown', (e) => { director.auto = false; drag = { x: e.clientX, y: e.clientY, px: cam.px, py: cam.py, moved: false }; });
     window.addEventListener('mouseup', () => { setTimeout(() => { drag = null; }, 0); });
     canvas.addEventListener('mousemove', (e) => {
       if (drag && (e.buttons & 1)) {
@@ -53,7 +54,7 @@ const World = (() => {
     });
     canvas.addEventListener('mouseleave', () => { hoverId = null; });
     canvas.addEventListener('click', (e) => { if (drag && drag.moved) return; const id = hit(e); onSelect(id); });
-    canvas.addEventListener('dblclick', () => { cam.z = 1; cam.px = 0; cam.py = 0; });
+    canvas.addEventListener('dblclick', () => { director.auto = false; cam.z = 1; cam.px = 0; cam.py = 0; });
     requestAnimationFrame(frame);
   }
 
@@ -254,13 +255,126 @@ const World = (() => {
     if (!e) return;
     if (ev.type === 'task.progress' && ev.note) e.bubble = { text: ev.note, until: performance.now() + 4500 };
     if (ev.type === 'task.start') e.bubble = { text: ev.title, until: performance.now() + 4000 };
-    if (ev.type === 'task.done') addEffect(e, ev.value ? '+' + String(ev.value).replace(/^\+/, '') : 'done!', '#7ee08a');
-    if (ev.type === 'task.fail') addEffect(e, 'failed', '#ff6b6b');
+    const p = layout && layout.pods[ev.agent];
+    const big = p && p.boss;
+    const headY = e.y - (big ? 60 : 30);
+    if (ev.type === 'task.start') {
+      rings.push({ x: e.x, y: e.y - 2, t0: performance.now(), dur: 700, color: '122,162,255' });
+      burst(e.x, headY + 10, 8, ['#9cc7ff', '#ffffff'], 60);
+      focus(ev.agent, 4200);
+    }
+    if (ev.type === 'task.done') {
+      const money = moneyOf(ev.value);
+      addEffect(e, money ? '+$' + money.toLocaleString() : 'DONE!', money ? '#ffd65a' : '#7ee08a', true);
+      rings.push({ x: e.x, y: e.y - 2, t0: performance.now(), dur: 900, color: money ? '255,214,90' : '126,224,138' });
+      burst(e.x, headY, money ? 26 : 14, money ? ['#ffd65a', '#fff3b0', '#f5a623'] : ['#7ee08a', '#c8ffd0'], money ? 120 : 90, money ? 'coin' : 'spark');
+      if (money) shake(2.2, 260);
+      focus(ev.agent, 5200, true);
+    }
+    if (ev.type === 'task.fail') {
+      addEffect(e, 'FAILED', '#ff6b6b', true);
+      rings.push({ x: e.x, y: e.y - 2, t0: performance.now(), dur: 800, color: '255,107,107' });
+      burst(e.x, headY, 12, ['#ff6b6b', '#ffb0b0'], 80);
+      shake(3, 320);
+      focus(ev.agent, 5000, true);
+    }
   }
 
-  function addEffect(e, text, color) {
+  // ---- juice: particles, rings, screen shake ---------------------------------
+  const particles = [];
+  const rings = [];
+  const shakeState = { mag: 0, until: 0, dur: 1 };
+  function moneyOf(v) {
+    const m = String(v == null ? '' : v).replace(/,/g, '').match(/\$?\s*(\d+(?:\.\d+)?)/);
+    return m && /\$/.test(String(v)) ? Math.round(Number(m[1])) : 0;
+  }
+  function burst(x, y, n, colors, speed, kind) {
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.3;
+      const v = speed * (0.45 + Math.random() * 0.75);
+      particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0, max: 0.7 + Math.random() * 0.6,
+        color: colors[i % colors.length], size: kind === 'coin' ? 3 : 2, kind: kind || 'spark' });
+    }
+  }
+  function shake(mag, ms) { shakeState.mag = mag; shakeState.dur = ms; shakeState.until = performance.now() + ms; }
+  function stepJuice(dt) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const q = particles[i];
+      q.life += dt;
+      if (q.life >= q.max) { particles.splice(i, 1); continue; }
+      q.vy += 260 * dt; q.vx *= 0.985;
+      q.x += q.vx * dt; q.y += q.vy * dt;
+    }
+  }
+  function drawJuice() {
+    const t = performance.now();
+    for (let i = rings.length - 1; i >= 0; i--) {
+      const r = rings[i];
+      const k = (t - r.t0) / r.dur;
+      if (k >= 1) { rings.splice(i, 1); continue; }
+      const e = 1 - Math.pow(1 - k, 3);
+      ctx.strokeStyle = 'rgba(' + r.color + ',' + (1 - k) * 0.9 + ')';
+      ctx.lineWidth = 2 * (1 - k) + 0.5;
+      ctx.beginPath(); ctx.ellipse(r.x, r.y, 6 + e * 26, (6 + e * 26) * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    for (const q of particles) {
+      const a = 1 - q.life / q.max;
+      ctx.globalAlpha = Math.min(1, a * 1.6);
+      ctx.fillStyle = q.color;
+      if (q.kind === 'coin') {
+        const w = Math.max(1, Math.abs(Math.cos(q.life * 14)) * q.size); // spinning coin
+        ctx.fillRect(Math.round(q.x - w / 2), Math.round(q.y), Math.ceil(w), q.size);
+      } else ctx.fillRect(Math.round(q.x), Math.round(q.y), q.size, q.size);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ---- director camera: glides to whoever just did something, then pulls back ----
+  // focusTiles / tourTiles: how many tiles fit across the screen in a close-up / room shot
+  const director = { auto: false, tour: false, target: null, until: 0, lastSwitch: 0, queue: null, focusTiles: 16, tourTiles: 22, centerY: 0.5 };
+  function focus(id, ms, important) {
+    if (!director.auto) return;
+    const t = performance.now();
+    if (director.target && t - director.lastSwitch < 2500 && !important) { director.queue = { id, ms }; return; }
+    director.target = id; director.until = t + ms; director.lastSwitch = t;
+  }
+  function stepDirector(dt) {
+    if (!director.auto || !layout || !view.w) return;
+    const t = performance.now();
+    if (director.target && t > director.until) {
+      director.target = null;
+      if (director.queue) { const q = director.queue; director.queue = null; focus(q.id, q.ms); }
+    }
+    const fit = fitZoom();
+    let tz = 1, cx = layout.w / 2, cy = layout.h / 2;
+    const e = director.target && ents.get(director.target);
+    const across = (tiles) => Math.max(1, view.w / (tiles * T) / fit);
+    if (e) { tz = across(director.focusTiles); cx = e.x; cy = e.y - 20; }
+    else if (director.tour && layout.rooms.length) {
+      // between events, drift from room to room instead of sitting on the overview
+      const rm = layout.rooms[Math.floor(t / 6500) % layout.rooms.length];
+      tz = across(director.tourTiles); cx = (rm.x + rm.w / 2) * T; cy = (rm.y + rm.h / 2 - 0.5) * T;
+    }
+    const k = 1 - Math.pow(0.04, dt); // smooth ease toward the shot
+    cam.z += (tz - cam.z) * k;
+    const z = fit * cam.z;
+    const tpx = view.w / 2 - cx * z - (view.w - layout.w * z) / 2;
+    const tpy = view.h * director.centerY - cy * z - (view.h - layout.h * z) / 2;
+    // keep the station on screen
+    const maxX = Math.max(0, (layout.w * z - view.w) / 2), maxY = Math.max(0, (layout.h * z - view.h) / 2);
+    cam.px += (Math.max(-maxX, Math.min(maxX, tpx)) - cam.px) * k;
+    cam.py += (Math.max(-maxY, Math.min(maxY, tpy)) - cam.py) * k;
+  }
+  function setAuto(on, opts) {
+    director.auto = !!on;
+    if (!on) director.target = null;
+    if (opts) Object.assign(director, opts);
+  }
+  function getAuto() { return director.auto; }
+
+  function addEffect(e, text, color, big) {
     const p = layout && layout.pods[e.id];
-    effects.push({ x: e.x, y: e.y - (p && p.boss ? 68 : 34), text, color, t0: performance.now(), dur: 2200 });
+    effects.push({ x: e.x, y: e.y - (p && p.boss ? 68 : 38), text, color, big, t0: performance.now(), dur: big ? 2400 : 2200 });
   }
 
   // ---- render ----------------------------------------------------------------
@@ -291,6 +405,8 @@ const World = (() => {
     if (state && art) {
       sync(state);
       step(dt);
+      stepJuice(dt);
+      stepDirector(dt);
       draw(t / 1000, state);
     }
     requestAnimationFrame(frame);
@@ -349,7 +465,7 @@ const World = (() => {
     let fit = Math.min(w / layout.w, h / layout.h);
     fit = fit >= 1 ? Math.floor(fit * 4) / 4 : fit;
     const zoom = fit * cam.z;
-    if (cam.z === 1) { cam.px = 0; cam.py = 0; }
+    if (cam.z === 1 && !director.auto) { cam.px = 0; cam.py = 0; }
     view = { zoom, ox: Math.floor((w - layout.w * zoom) / 2 + cam.px), oy: Math.floor((h - layout.h * zoom) / 2 + cam.py), dpr, w, h };
   }
 
@@ -361,7 +477,13 @@ const World = (() => {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = '#05060d';
     ctx.fillRect(0, 0, view.w, view.h);
-    ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, ox * dpr, oy * dpr);
+    let sx = 0, sy = 0;
+    const st = performance.now();
+    if (st < shakeState.until) {
+      const m = shakeState.mag * ((shakeState.until - st) / shakeState.dur);
+      sx = (Math.random() - 0.5) * 2 * m; sy = (Math.random() - 0.5) * 2 * m;
+    }
+    ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, (ox + sx) * dpr, (oy + sy) * dpr);
     ctx.imageSmoothingEnabled = false;
     const R = art.roles;
 
@@ -443,7 +565,33 @@ const World = (() => {
       const e = ents.get(id);
       if (e) bubble(e);
     }
+    drawJuice();
     drawEffects();
+    postFx();
+  }
+
+  // Screen-space finish: vignette to pull the eye to the middle, faint scanlines for a monitor feel.
+  let scan = null;
+  const fx = { scanlines: true, vignette: true };
+  function postFx() {
+    const { dpr, w, h } = view;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (fx.vignette) {
+      const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.max(w, h) * 0.75);
+      g.addColorStop(0, 'rgba(0,0,0,0)');
+      g.addColorStop(1, 'rgba(0,0,10,.55)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    }
+    if (fx.scanlines) {
+      if (!scan) {
+        const c = document.createElement('canvas'); c.width = 4; c.height = 3;
+        const g = c.getContext('2d'); g.fillStyle = 'rgba(0,0,0,.16)'; g.fillRect(0, 2, 4, 1);
+        scan = ctx.createPattern(c, 'repeat');
+      }
+      ctx.fillStyle = scan;
+      ctx.fillRect(0, 0, w, h);
+    }
   }
 
   function drawRoom(rm, time, state) {
@@ -573,11 +721,22 @@ const World = (() => {
       const f = effects[i];
       const k = (t - f.t0) / f.dur;
       if (k >= 1) { effects.splice(i, 1); continue; }
-      ctx.globalAlpha = 1 - k * k;
-      ctx.fillStyle = '#0f1220';
-      ctx.fillText(f.text, f.x + 0.6, f.y - k * 18 + 0.6);
+      // pop in with a little overshoot, drift up, fade out
+      const pin = Math.min(1, k / 0.18);
+      const c1 = 1.70158, c3 = c1 + 1;
+      const pop = 1 + c3 * Math.pow(pin - 1, 3) + c1 * Math.pow(pin - 1, 2);
+      const sc = (f.big ? 1.6 : 1) * Math.max(0.01, pop);
+      const yy = f.y - k * 20;
+      ctx.save();
+      ctx.translate(f.x, yy);
+      ctx.scale(sc, sc);
+      ctx.globalAlpha = k > 0.7 ? 1 - (k - 0.7) / 0.3 : 1;
+      ctx.font = '700 8px ui-monospace, Menlo, Consolas, monospace';
+      ctx.lineWidth = 2.5; ctx.strokeStyle = '#0b0d1c'; ctx.lineJoin = 'round';
+      ctx.strokeText(f.text, 0, 0);
       ctx.fillStyle = f.color;
-      ctx.fillText(f.text, f.x, f.y - k * 18);
+      ctx.fillText(f.text, 0, 0);
+      ctx.restore();
       ctx.globalAlpha = 1;
     }
   }
@@ -621,7 +780,7 @@ const World = (() => {
     return h ? h + ':' + p(m) + ':' + p(ss) : p(m) + ':' + p(ss);
   }
 
-  return { init, onEvent, setSelected, fmtDur, frameCanvas, zoomAt };
+  return { init, onEvent, setSelected, fmtDur, frameCanvas, zoomAt, setAuto, getAuto, fx, moneyOf };
 
   // Draw a sprite frame into a small canvas, used for crew portraits.
   function frameCanvas(a, index, size) {

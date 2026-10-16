@@ -18,6 +18,59 @@
 
   World.init({ art, canvas: $('world'), getState: () => state, now, onSelect: select });
 
+  // ---- camera + TikTok mode ------------------------------------------------------
+  const params = new URLSearchParams(location.search);
+  const tiktok = params.get('mode') === 'tiktok';
+  const HOOK_KEY = 'acres.hook';
+  if (tiktok) {
+    document.body.classList.add('tiktok');
+    World.setAuto(true, { tour: true, focusTiles: 9, tourTiles: 14, centerY: 0.5 });
+    let hook = params.get('hook');
+    try { hook = hook || localStorage.getItem(HOOK_KEY); } catch { /* storage blocked */ }
+    const h = $('hook');
+    h.textContent = hook || 'I built 7 AI agents to run 6 businesses';
+    h.contentEditable = 'true';
+    h.addEventListener('input', () => { try { localStorage.setItem(HOOK_KEY, h.textContent); } catch { /* ignore */ } });
+  }
+  function setCam(on) {
+    World.setAuto(on, { tour: tiktok });
+    $('camBtn').textContent = 'CAM: ' + (on ? 'AUTO' : 'FREE');
+    $('camBtn').classList.toggle('on', on);
+  }
+  $('camBtn').addEventListener('click', () => setCam(!World.getAuto()));
+  $('world').addEventListener('mousedown', () => setTimeout(() => setCam(World.getAuto()), 0));
+  $('world').addEventListener('wheel', () => setTimeout(() => setCam(World.getAuto()), 0));
+  $('tiktokBtn').addEventListener('click', () => { location.search = '?mode=tiktok'; });
+  $('ttExit').addEventListener('click', () => { location.search = ''; });
+
+  // money ticker that counts up instead of jumping
+  let shownMoney = 0, targetMoney = 0;
+  function tickMoney() {
+    if (shownMoney !== targetMoney) {
+      const d = targetMoney - shownMoney;
+      shownMoney = Math.abs(d) < 1 ? targetMoney : shownMoney + d * 0.12;
+      $('ttMoney').textContent = '$' + Math.round(shownMoney).toLocaleString();
+    }
+    requestAnimationFrame(tickMoney);
+  }
+  requestAnimationFrame(tickMoney);
+
+  function toast(ev) {
+    const a = state.agents[ev.agent];
+    if (!a) return;
+    const money = World.moneyOf(ev.value);
+    const el = document.createElement('div');
+    el.className = 'toast';
+    const title = ev.title || (ev.result || 'Task done');
+    el.innerHTML = '<span class="who" style="color:' + esc(a.color || '#9cc7ff') + '">✓ ' + esc(a.name.toUpperCase()) + '</span>' +
+      esc(ev.result || title) + (money ? ' <b>+$' + money.toLocaleString() + '</b>' : '');
+    const box = $('toasts');
+    box.prepend(el);
+    while (box.children.length > 3) box.lastChild.remove();
+    setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 4200);
+    if (money) { const m = $('ttMoney'); m.classList.remove('bump'); void m.offsetWidth; m.classList.add('bump'); }
+  }
+
   function select(id) {
     selected = id && id !== selected ? id : null;
     World.setSelected(selected);
@@ -47,6 +100,7 @@
       AcresReducer.apply(state, ev);
       World.onEvent(ev, state.agents[ev.agent]);
       renderAll();
+      if (tiktok && ev.type === 'task.done') toast(ev);
     });
     es.addEventListener('rating', (m) => {
       if (!state) return;
@@ -98,6 +152,10 @@
       '<span><b>' + doneToday + '</b> DONE TODAY</span>' +
       (errors ? '<span style="color:var(--err)"><b>' + errors + '</b> NEED ATTENTION</span>' : '');
     const total = agents.reduce((n, a) => n + a.doneCount, 0);
+    const today = state.done.filter((d) => d.ts >= startOfDay());
+    targetMoney = today.reduce((n, d) => n + World.moneyOf(d.value), 0);
+    $('ttStats').innerHTML = esc(today.length + ' JOBS DONE TODAY') + '<br>' + esc(working + '/' + agents.length + ' AGENTS WORKING') +
+      (state.demo ? '<br><span style="color:#f5c542">SIMULATED (DEMO)</span>' : '');
     $('commander').innerHTML = '<span class="hex">⬢</span><div><small>COMMANDER</small><b>Lv ' + level(total).lv + '</b></div>';
     const btn = $('demoBtn');
     btn.textContent = 'DEMO: ' + (state.demo ? 'ON' : 'OFF');

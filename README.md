@@ -30,6 +30,24 @@ npm run demo        # or: node server.js --demo
 Open <http://127.0.0.1:8790>. Use the **Demo** button to switch the simulator on or off.
 `npm start` runs without the simulator, so you only see what real agents report.
 
+## Making TikToks
+
+Press **TIKTOK** (or open <http://127.0.0.1:8790/?mode=tiktok>) for a vertical 9:16 stage made for
+screen recording:
+
+- A hook line at the top. Click it to edit; it is remembered in this browser, or pass `?hook=Your+text`.
+- A money counter that counts up as paid work lands, plus jobs done today and agents working.
+- Pop-up cards for each finished job, kept out of the bottom fifth and right edge where TikTok puts
+  its caption and buttons.
+- The director camera: it glides to whichever agent just started or finished something, and tours
+  the rooms in between. Use **CAM: AUTO** for the same camera in the normal view.
+
+Every finished job pops a coin burst, a bouncing `+$40`, a ring and a small screen shake (paid work
+only). A vignette and faint scanlines give it a monitor feel. While demo mode is on, the TikTok view
+says SIMULATED so recordings of the demo are not mistaken for real earnings.
+
+Record the browser window with OBS (or Windows Game Bar, Win+Alt+R) at 1080x1920.
+
 ## Your crew
 
 The default crew lives in [`agents.example.json`](agents.example.json):
