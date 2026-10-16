@@ -1,7 +1,7 @@
 {
   "_comment": "Copy to agents.json (gitignored) to change your crew. project = which room the agent works in (agents sharing a project share a room). script = which task list its standby jobs come from (see lib/tasks.js). role \"boss\" puts the agent in the middle HQ room as the big mech; role \"lead\" makes it its room's boss. model is shown on the name plate. look = optional sprite key from the SPRITES page; leave it out and each worker gets the next unused sprite. color = name tag color.",
   "agents": [
-    {"id": "boss", "name": "Boss", "business": "Runs the crew", "role": "boss", "model": "Claude Opus 5", "color": "#f5c542", "script": "boss"},
+    {"id": "boss", "name": "Huncho", "business": "Runs the crew", "role": "boss", "model": "Claude Opus 5", "color": "#f5c542", "script": "boss"},
     {"id": "thumbnails", "role": "lead", "name": "Thumbs", "business": "Thumbnail designer", "project": "Fiverr Thumbnails", "color": "#f5a623", "script": "thumbnails"},
     {"id": "clipping", "role": "lead", "name": "Clipper", "business": "Finds the best moments", "project": "Fiverr Clipping", "color": "#e94e77", "script": "clipping"},
     {"id": "geo-agency", "role": "lead", "name": "Geo", "business": "AI visibility audits", "project": "GEO Agency", "color": "#4a90d9", "script": "geo-agency"},

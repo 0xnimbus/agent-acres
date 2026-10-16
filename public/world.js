@@ -341,14 +341,12 @@ const World = (() => {
       addEffect(e, money ? '+$' + money.toLocaleString() : 'DONE!', money ? '#ffd65a' : '#7ee08a', true);
       rings.push({ x: e.x, y: e.y - 2, t0: performance.now(), dur: 900, color: money ? '255,214,90' : '126,224,138' });
       burst(e.x, headY, money ? 26 : 14, money ? ['#ffd65a', '#fff3b0', '#f5a623'] : ['#7ee08a', '#c8ffd0'], money ? 120 : 90, money ? 'coin' : 'spark');
-      if (money) shake(2.2, 260);
       focus(ev.agent, 5200, true);
     }
     if (ev.type === 'task.fail') {
       addEffect(e, 'FAILED', '#ff6b6b', true);
       rings.push({ x: e.x, y: e.y - 2, t0: performance.now(), dur: 800, color: '255,107,107' });
       burst(e.x, headY, 12, ['#ff6b6b', '#ffb0b0'], 80);
-      shake(3, 320);
       focus(ev.agent, 5000, true);
     }
   }

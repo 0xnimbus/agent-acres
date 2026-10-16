@@ -59,7 +59,7 @@ function readCookie(request, name) {
 const PAGE_HEADERS = {
   "Content-Type": "text/html; charset=utf-8",
   "Cache-Control": "no-store",
-  "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
+  "Content-Security-Policy": "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
   "X-Frame-Options": "DENY",
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "same-origin",
@@ -73,7 +73,7 @@ function mask(email) {
 
 function passwordPage(message, status = 200) {
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sign in · Agent Acres</title><meta name="robots" content="noindex,nofollow">
+<title>Sign in · Agent Acres</title><link rel="icon" type="image/svg+xml" href="/favicon.svg"><meta name="robots" content="noindex,nofollow">
 <style>
 :root{color-scheme:dark}
 body{margin:0;min-height:100vh;display:grid;place-items:center;background:#050816;color:#e6ecff;font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:16px;box-sizing:border-box}
@@ -94,7 +94,7 @@ ${message ? `<p class="err" role="alert">${message}</p>` : ""}
 
 function page(email, message, sent, status = 200) {
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sign in · Agent Acres</title><meta name="robots" content="noindex,nofollow">
+<title>Sign in · Agent Acres</title><link rel="icon" type="image/svg+xml" href="/favicon.svg"><meta name="robots" content="noindex,nofollow">
 <style>
 :root{color-scheme:dark}
 body{margin:0;min-height:100vh;display:grid;place-items:center;background:#050816;color:#e6ecff;font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:16px;box-sizing:border-box}
@@ -154,6 +154,7 @@ export default async function middleware(request) {
   }
 
   const url = new URL(request.url);
+  if (url.pathname === "/favicon.svg") return; // original icon art, safe to show on the sign-in page
   if (env.token && url.pathname === "/api/events" && request.method === "POST") {
     const auth = request.headers.get("authorization") || "";
     if (await safeEqual(auth, "Bearer " + env.token, env.secret)) return; // the function checks it again
