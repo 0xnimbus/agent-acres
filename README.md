@@ -59,6 +59,9 @@ The default crew lives in [`agents.example.json`](agents.example.json):
 | `ebay` | Bay | eBay Resale | |
 | `fb-marketplace` | Market | FB Marketplace | |
 
+With the Tech Dungeon pack, workers are the pack's enemy mobs (look 0-7: crawler, spider walker,
+robot, bug and four turrets) and looks 8-15 are the player characters; the boss is the big mech.
+
 Copy it to `agents.json` (gitignored) to rename agents, move them between projects, set models,
 change name-tag colors or pick looks. Agents that share a `project` share a chamber; a new project
 gets a new chamber automatically. Agents that are not in the roster appear the first time they

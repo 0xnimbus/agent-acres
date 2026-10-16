@@ -1,5 +1,5 @@
 {
-  "_comment": "Copy to agents.json (gitignored) to change your crew. project = which chamber the agent works in (agents sharing a project share a chamber). role \"boss\" puts the agent in the middle HQ chamber as the big mech. model is shown on the name plate. look = character look 0-7; higher numbers reuse a look with a tint. color = name tag color.",
+  "_comment": "Copy to agents.json (gitignored) to change your crew. project = which chamber the agent works in (agents sharing a project share a chamber). role \"boss\" puts the agent in the middle HQ chamber as the big mech. model is shown on the name plate. look = character look: with the Tech Dungeon pack 0-7 are enemy mobs (crawler, spider walker, robot, bug, four turrets) and 8-15 are the player characters; higher numbers reuse a look with a tint. color = name tag color.",
   "agents": [
     {"id": "boss", "name": "Boss", "business": "Runs the crew", "role": "boss", "model": "Claude Opus 5", "color": "#f5c542"},
     {"id": "thumbnails", "name": "Thumbs", "business": "Fiverr thumbnail design", "project": "Fiverr Thumbnails", "look": 0, "color": "#f5a623"},
