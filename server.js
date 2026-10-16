@@ -62,11 +62,17 @@ function loadLog() {
   realEvents = realEvents.slice(-REAL_KEEP);
 }
 
+// Ratings the commander gives finished work ("rate it"), kept apart from events.
+const RATINGS_FILE = path.join(DATA, 'ratings.json');
+let ratings = {};
+try { ratings = JSON.parse(fs.readFileSync(RATINGS_FILE, 'utf8')); } catch { /* none yet */ }
+
 function buildState() {
   const s = R.emptyState();
   const evs = rosterEvents().concat(demoOn ? mergeByTs(realEvents, demoEvents) : realEvents);
   for (const ev of evs) R.apply(s, ev);
   s.demo = demoOn;
+  s.ratings = ratings;
   s.serverTime = Date.now();
   return s;
 }
@@ -214,6 +220,18 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (p === '/api/rate' && req.method === 'POST') {
+    return readBody(req, (body) => {
+      let j;
+      try { j = JSON.parse(body); } catch { return send(res, 400, { ok: false, error: 'body is not JSON' }); }
+      const stars = Number(j.stars);
+      if (typeof j.id !== 'string' || !(stars >= 0 && stars <= 5)) return send(res, 400, { ok: false, error: 'need { id, stars: 0-5 }' });
+      if (stars === 0) delete ratings[j.id]; else ratings[j.id] = Math.round(stars);
+      fs.writeFile(RATINGS_FILE, JSON.stringify(ratings), () => {});
+      broadcast('rating', { id: j.id, stars: ratings[j.id] || 0 });
+      send(res, 200, { ok: true });
+    });
+  }
   if (p === '/api/state') return send(res, 200, buildState());
   if (p === '/api/manifest') return send(res, 200, manifest());
   if (p === '/api/demo' && req.method === 'POST') {

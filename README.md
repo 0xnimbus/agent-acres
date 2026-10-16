@@ -1,8 +1,11 @@
 # Agent Acres
 
-A pixel-art office where you watch your AI agents work. Each project gets its own walled chamber,
-arranged around a middle **HQ** chamber where the boss agent (the big mech) runs the crew. Inside a
-chamber every agent gets a character, a desk, a wall screen and a name plate. When an agent starts a task it walks to its desk, its screen lights
+A pixel-art space station where you watch your AI agents work. Each project gets its own room,
+linked by hallways to the middle **HQ** room where the boss agent (the big mech) runs the crew.
+Inside a room every agent gets a character, a desk with a name tag and a `RUN 0:51` timer, and a
+wall monitor; desks light up while their agent works. The side panels follow StarNet's layout: a
+crew list with portraits and levels, a commander level, and a COMMS feed where each finished job
+has **read the work** and **rate it** buttons. When an agent starts a task it walks to its desk, its screen lights
 up and a run timer starts; when it finishes, the result lands in **Finished work** and the agent
 wanders off to the lounge until the next job.
 
@@ -95,7 +98,7 @@ report(type="task.start", agent="clipping", title="Clip 2h podcast into shorts")
 
 Real events are kept in `data/events.ndjson`, so the farm comes back the way you left it after a
 restart. Other endpoints: `GET /api/state` (current snapshot), `GET /api/stream` (SSE),
-`POST /api/demo` with `{"on": true|false}`.
+`POST /api/demo` with `{"on": true|false}`, `POST /api/rate` with `{"id": "<done id>", "stars": 0-5}`.
 
 The server listens on `127.0.0.1` only. To accept events from other machines set `HOST=0.0.0.0`
 and `AGENT_ACRES_TOKEN=<secret>`; agents then send `Authorization: Bearer <secret>`.
@@ -132,7 +135,7 @@ A manifest maps roles to sprite sheets. Frames are `[column, row]` in units of `
 }
 ```
 
-Roles: `floor`, `floorAccent`, `floorVent`, `wall`, `wallTrim`, `deskWork`, `deskIdle`,
+Roles: `floor`, `floorAccent`, `floorVent`, `wall`, `wallTrim`, `wallBottom`, `railLeft`, `railRight`, `hazard`, `wallMonitorOff`, `deskWork`, `deskIdle`,
 `screenWork` (64x32), `screenIdle`, `wallMonitor`, `console`, `tank` (32x64), `crate`,
 `crateOpen`, `capsule`. Add a top-level `"boss"` entry (same shape as a character, any cell size) for the HQ boss. Any role you leave out falls back to the placeholder art. If there are
 more agents than character looks, extra agents reuse a look tinted with their name-tag color.

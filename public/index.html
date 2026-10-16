@@ -4,31 +4,41 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Agent Acres</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=VT323&display=swap">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <header>
-    <div class="brand"><span class="logo">&#9638;</span> Agent Acres</div>
+    <div class="brand">AGENT ACRES</div>
     <div class="stats" id="stats"></div>
     <div class="right">
+      <div class="badge" id="commander"></div>
       <span class="conn" id="conn">connecting&hellip;</span>
-      <button id="demoBtn" title="Simulate all agents (demo events are never saved)">Demo: off</button>
+      <button id="demoBtn" title="Simulate all agents (demo events are never saved)">DEMO: OFF</button>
     </div>
   </header>
   <main>
-    <section class="floor"><canvas id="world"></canvas><div class="banner" id="banner" hidden></div></section>
-    <aside>
-      <div class="panel">
-        <h2>Crew <span class="count" id="crewCount"></span></h2>
+    <aside class="left">
+      <div class="panel grow">
+        <h2><span class="sq"></span>CREW <span class="count" id="crewCount"></span></h2>
         <ul id="crew" class="crew"></ul>
       </div>
+    </aside>
+    <section class="floor">
+      <canvas id="world"></canvas>
+      <div class="live"><span class="dot"></span>LIVE</div>
+      <div class="banner" id="banner" hidden></div>
+    </section>
+    <aside class="right-col">
       <div class="panel grow">
         <div class="tabs">
-          <button class="tab active" data-tab="feed">Live feed</button>
-          <button class="tab" data-tab="done">Finished work <span class="count" id="doneCount"></span></button>
+          <button class="tab active" data-tab="done"><span class="sq"></span>COMMS <span class="count" id="doneCount"></span></button>
+          <button class="tab" data-tab="feed">FEED</button>
+          <span class="filter" id="filter" hidden></span>
         </div>
-        <ul id="feed" class="feed"></ul>
-        <ul id="done" class="feed" hidden></ul>
+        <ul id="done" class="comms"></ul>
+        <ul id="feed" class="feed" hidden></ul>
       </div>
     </aside>
   </main>

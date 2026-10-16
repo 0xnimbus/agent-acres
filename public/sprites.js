@@ -5,7 +5,7 @@
 
 const Sprites = (() => {
   const ROLES = ['floor', 'floorAccent', 'floorVent', 'wall', 'wallTrim', 'deskWork', 'deskIdle', 'screenWork', 'screenIdle',
-    'wallMonitor', 'console', 'tank', 'crate', 'crateOpen', 'capsule'];
+    'wallMonitor', 'wallMonitorOff', 'wallBottom', 'railLeft', 'railRight', 'hazard', 'console', 'tank', 'crate', 'crateOpen', 'capsule'];
 
   function loadImage(src) {
     return new Promise((resolve, reject) => {
@@ -81,6 +81,11 @@ const Sprites = (() => {
     roles.screenWork = Object.assign(sheet(64, 32, 4, (g, i) => screen(g, true, i)), { fps: 3 });
     roles.screenIdle = sheet(64, 32, 1, (g) => screen(g, false, 0));
     roles.wallMonitor = Object.assign(sheet(32, 32, 2, (g, i) => { px(g, '#8fa3c0', 3, 8, 26, 16); px(g, i ? '#7ed37e' : '#5cb85c', 5, 10, 22, 12); }), { fps: 1 });
+    roles.wallMonitorOff = sheet(32, 32, 1, (g) => { px(g, '#8fa3c0', 3, 8, 26, 16); px(g, '#1b1f33', 5, 10, 22, 12); });
+    roles.wallBottom = sheet(32, 32, 1, (g) => { px(g, '#3e4a68', 0, 0, 32, 24); px(g, '#56658a', 2, 2, 28, 18); px(g, '#8fa3c0', 0, 22, 32, 3); });
+    roles.railLeft = sheet(32, 32, 1, (g) => { px(g, '#8fa3c0', 2, 0, 4, 32); px(g, '#56658a', 6, 0, 1, 32); });
+    roles.railRight = sheet(32, 32, 1, (g) => { px(g, '#8fa3c0', 26, 0, 4, 32); px(g, '#56658a', 25, 0, 1, 32); });
+    roles.hazard = sheet(32, 32, 1, (g) => { for (let x = 0; x < 32; x += 8) { px(g, '#f5c542', x, 26, 4, 4); px(g, '#1b1f33', x + 4, 26, 4, 4); } });
     roles.console = Object.assign(sheet(32, 32, 2, (g, i) => { px(g, '#2b3350', 2, 8, 28, 22); px(g, i ? '#5fb3f0' : '#3a8ee6', 5, 11, 14, 8); px(g, '#7ee0a5', 22, 11, 5, 8); }), { fps: 2 });
     roles.tank = Object.assign(sheet(32, 64, 2, (g, i) => {
       px(g, '#8fa3c0', 5, 4, 22, 8); px(g, '#6fcf6f', 6, 12, 20, 40); px(g, '#4caf50', 6, 44 - i * 2, 20, 8 + i * 2); px(g, '#8fa3c0', 5, 52, 22, 8);
