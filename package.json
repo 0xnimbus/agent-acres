@@ -10,6 +10,7 @@
     "demo": "node server.js --demo",
     "art": "node bin/art.js",
     "emit": "node bin/emit.js",
+    "setup:vercel": "node scripts/setup-vercel.js",
     "test": "node test/reducer.test.js"
   },
   "engines": { "node": ">=18" }

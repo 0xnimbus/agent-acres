@@ -235,7 +235,7 @@
         '<div class="portrait" data-portrait="' + esc(id) + '"><i style="background:' + esc(a.color || '#6b7899') + '"></i></div>' +
         '<div><span class="name" style="color:' + esc(a.color || '#e6ecff') + '">' + esc(a.name.toUpperCase()) + '</span>' + (a.model ? ' <span class="model">' + esc(a.model) + '</span>' : '') + '</div>' +
         '<div class="lvl">Lv ' + lv.lv + '</div>' +
-        '<div class="st ' + a.status + '">' + a.status.toUpperCase() + '</div>' +
+        '<div class="st ' + a.status + '">' + (a.status === 'idle' ? 'STANDBY' : a.status.toUpperCase()) + '</div>' +
         '<div class="timer" data-since="' + timerStart + '">' + World.fmtDur(now() - timerStart) + '</div>' +
         '<div class="xp"><i style="width:' + (a.task && a.task.pct != null ? a.task.pct : lv.pct) + '%"></i></div>' +
         task + '</li>';

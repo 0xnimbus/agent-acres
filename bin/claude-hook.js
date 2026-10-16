@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Claude Code hook: reports what a Claude session is doing to Agent Acres, so each
-// project you work on shows up as a worker in its own room.
+// Claude Code hook: reports what Claude sessions are doing to Agent Acres. Each
+// project folder is a room with a "Claude" worker; a thread (session) you come
+// back to gets its own little worker in that room from its second message on.
 //
 // Wire it up in a settings.json "hooks" block for these events:
 //   SessionStart, UserPromptSubmit, Notification, Stop, SessionEnd
@@ -10,11 +11,12 @@
 //   ACRES_URL           where the station is (default http://127.0.0.1:8790)
 //   AGENT_ACRES_TOKEN   required for the hosted (Vercel) station
 //   ACRES_PROJECT       room name (default: the project folder's name)
-//   ACRES_AGENT         worker id (default: derived from the project name)
 //
 // It never blocks or fails a Claude session: errors are swallowed and it gives up after 3 seconds.
 'use strict';
 
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 let input = '';
@@ -23,30 +25,67 @@ process.stdin.on('data', (c) => { input += c; });
 process.stdin.on('end', () => { main().catch(() => {}).finally(() => process.exit(0)); });
 setTimeout(() => process.exit(0), 3000).unref();
 
-const PRETTY = { 'jobhunt.ai': 'JobHunt.ai', jobhuntai: 'JobHunt.ai', habixrpg: 'Habix RPG', 'habix-rpg': 'Habix RPG', 'agent-acres': 'Agent Acres' };
+const PRETTY = { 'jobhunt.ai': 'JobHunt.ai', jobhuntai: 'JobHunt.ai', habitquest: 'Habix RPG', habixrpg: 'Habix RPG', 'habix-rpg': 'Habix RPG', 'agent-acres': 'Agent Acres' };
+const STATE_FILE = path.join(os.homedir(), '.agent-acres', 'sessions.json');
+const FILLER = /^(hey|hi|ok(ay)?|so|please|can you|could you|would you|i want( you)? to|i would like( you)? to|let'?s|now|also|and)\s+/i;
+
+const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+const clip = (s, n) => String(s || '').replace(/\s+/g, ' ').trim().slice(0, n);
+
+function threadName(prompt) {
+  let t = clip(prompt, 200);
+  for (let i = 0; i < 4; i++) t = t.replace(FILLER, '');
+  const STOP = new Set(['the', 'a', 'an', 'to', 'of', 'my', 'this', 'that', 'it', 'me', 'for', 'in', 'on', 'with', 'is', 'are', 'and', 'so', 'some', 'more']);
+  const words = t.replace(/[^\w\s-]/g, '').split(/\s+/).filter((w) => w && !STOP.has(w.toLowerCase())).slice(0, 2);
+  const name = words.map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  return name.slice(0, 14) || 'Thread';
+}
+
+function loadState() {
+  try { return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')); } catch { return { sessions: {} }; }
+}
+function saveState(st) {
+  const cutoff = Date.now() - 14 * 86400000;
+  for (const [k, v] of Object.entries(st.sessions)) if (v.last < cutoff) delete st.sessions[k];
+  fs.mkdirSync(path.dirname(STATE_FILE), { recursive: true });
+  fs.writeFileSync(STATE_FILE, JSON.stringify(st));
+}
 
 async function main() {
   let h = {};
   try { h = JSON.parse(input || '{}'); } catch { return; }
   const folder = path.basename(h.cwd || process.cwd());
   const project = process.env.ACRES_PROJECT || PRETTY[folder.toLowerCase()] || folder;
-  const agent = (process.env.ACRES_AGENT || ('claude-' + project)).toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'claude';
-  const clip = (s, n) => String(s || '').replace(/\s+/g, ' ').trim().slice(0, n);
+  const sid = String(h.session_id || 'none');
+
+  const st = loadState();
+  const sess = st.sessions[sid] || (st.sessions[sid] = { prompts: 0, name: '', project, last: Date.now() });
+  sess.last = Date.now();
+  if (h.hook_event_name === 'UserPromptSubmit') {
+    sess.prompts++;
+    if (!sess.name) sess.name = threadName(h.prompt);
+  }
+  saveState(st);
+
+  // A thread used more than once gets its own worker; otherwise it is the room's Claude.
+  const own = sess.prompts >= 2;
+  const agent = own ? slug('thread-' + sid.slice(0, 8)) : slug('claude-' + project) || 'claude';
+  const hello = { type: 'agent.hello', agent, name: own ? sess.name : 'Claude', project,
+    business: own ? 'Claude thread on ' + project : 'Claude Code on ' + project };
 
   const events = [];
   switch (h.hook_event_name) {
     case 'SessionStart':
-      events.push({ type: 'agent.hello', agent, name: 'Claude', project, business: 'Claude Code on ' + project, model: process.env.ACRES_MODEL || undefined });
+      events.push(hello);
       break;
     case 'UserPromptSubmit':
-      events.push({ type: 'agent.hello', agent, name: 'Claude', project, business: 'Claude Code on ' + project });
-      events.push({ type: 'task.start', agent, task: h.session_id, title: clip(h.prompt, 120) || 'New request' });
+      events.push(hello, { type: 'task.start', agent, task: sid, title: clip(h.prompt, 120) || 'New request' });
       break;
     case 'Notification':
-      events.push({ type: 'task.progress', agent, task: h.session_id, note: clip(h.message, 120) || 'Waiting for you' });
+      events.push({ type: 'task.progress', agent, task: sid, note: clip(h.message, 120) || 'Waiting for you' });
       break;
     case 'Stop':
-      events.push({ type: 'task.done', agent, task: h.session_id, result: 'Finished, waiting for your next message' });
+      events.push({ type: 'task.done', agent, task: sid, result: 'Finished, waiting for your next message' });
       break;
     case 'SessionEnd':
       events.push({ type: 'agent.idle', agent, note: 'Session closed' });

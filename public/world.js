@@ -220,9 +220,18 @@ const World = (() => {
     return { key: layoutKey(state), RW, RH, wT, hT, w: wT * T, h: hT * T, rooms, halls, pods, floor, tiles, stars };
   }
 
+  // Standby routine: an idle worker still looks busy. It spends most of its time
+  // tinkering at its desk and now and then steps away, on its own rhythm.
+  function hashStr(str) { let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0; return Math.abs(h); }
+  function standbyAtDesk(a) {
+    const cycle = 9 + (hashStr(a.id) % 5);                 // seconds per beat
+    const beat = Math.floor((Date.now() / 1000 + (hashStr(a.id) % 97)) / cycle);
+    return (beat + hashStr(a.id)) % 3 !== 0;              // two beats at the desk, one away
+  }
+  const busyLooking = (a) => a.status === 'working' || (a.status === 'idle' && standbyAtDesk(a));
   function targetFor(a) {
     const pod = layout.pods[a.id];
-    if (a.status === 'idle') return Object.assign({ kind: 'idle' }, pod.idle);
+    if (a.status === 'idle' && !standbyAtDesk(a)) return Object.assign({ kind: 'idle' }, pod.idle);
     return Object.assign({ kind: 'desk' }, pod.work);
   }
 
@@ -584,7 +593,7 @@ const World = (() => {
         p.room.sparesQueued = true;
         for (const d of p.room.spares) drawables.push({ y: d.y + T - 1, draw: () => blit(R.deskIdle, time, d.x, d.y) });
       }
-      if (!p.boss) drawables.push({ y: p.desk.y + T - 1, draw: () => blit(a.status === 'working' ? R.deskWork : R.deskIdle, time, p.desk.x, p.desk.y, { offset: (p.px0 % 7) * 0.21 }) });
+      if (!p.boss) drawables.push({ y: p.desk.y + T - 1, draw: () => blit(busyLooking(a) ? R.deskWork : R.deskIdle, time, p.desk.x, p.desk.y, { offset: (p.px0 % 7) * 0.21 }) });
       const e = ents.get(id);
       if (e) drawables.push({ y: e.y, draw: () => character(a, e, state.order.indexOf(id), time) });
     }
@@ -631,7 +640,7 @@ const World = (() => {
   function drawRoom(rm, time, state) {
     const R = art.roles;
     const x = rm.x * T, y = rm.y * T, w = rm.w * T, h = rm.h * T;
-    const anyWorking = rm.agents.some((id) => state.agents[id] && state.agents[id].status === 'working');
+    const anyWorking = rm.agents.some((id) => state.agents[id] && busyLooking(state.agents[id]));
     // warm light over pods that are working, like a desk lamp on the floor
     for (const id of rm.agents) {
       const a = state.agents[id], p = layout.pods[id];
@@ -653,7 +662,7 @@ const World = (() => {
     } else {
       for (const id of rm.agents) {
         const a = state.agents[id], p = layout.pods[id];
-        blit(a.status === 'working' ? R.wallMonitor : R.wallMonitorOff, time, p.desk.x + 16, y - T + 2, { offset: (p.px0 % 5) * 0.37 });
+        blit(busyLooking(a) ? R.wallMonitor : R.wallMonitorOff, time, p.desk.x + 16, y - T + 2, { offset: (p.px0 % 5) * 0.37 });
       }
     }
     // wall lights with a pool of light below
@@ -677,7 +686,7 @@ const World = (() => {
     const look = p.boss ? art.boss : lookFor(a, index);
     const size = p.boss ? 64 : 32;
     const walking = e.path.length > 0;
-    const spr = walking ? look.walk : (a.status === 'working' && e.at === 'desk') ? look.work : look.idle;
+    const spr = walking ? look.walk : (busyLooking(a) && (e.at === 'desk' || p.boss)) ? look.work : look.idle;
     const sel = a.id === selectedId || a.id === hoverId;
     const rx = p.boss ? 20 : 8;
     ctx.fillStyle = 'rgba(0,0,0,.35)';
@@ -706,7 +715,7 @@ const World = (() => {
     let text, color;
     if (a.status === 'working') { text = 'RUN ' + fmtShort(now() - (a.task ? a.task.startedAt : a.since)); color = '#7ee08a'; }
     else if (a.status === 'error') { text = 'ERROR'; color = '#ff6b6b'; }
-    else { text = 'IDLE ' + fmtShort(now() - a.since); color = '#8ea0c8'; }
+    else { text = 'STANDBY ' + fmtShort(now() - a.since); color = '#8ea0c8'; }
     ctx.font = '700 6px ui-monospace, Menlo, Consolas, monospace';
     ctx.textAlign = 'left';
     const tx = Math.round(x + nw / 2 + 3);
