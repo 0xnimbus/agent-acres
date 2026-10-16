@@ -69,7 +69,7 @@ try { ratings = JSON.parse(fs.readFileSync(RATINGS_FILE, 'utf8')); } catch { /* 
 
 // Which character looks workers may use. Denied keys come from the sprite approval page.
 const POOL_FILE = path.join(DATA, 'pool.json');
-let pool = { denied: ['robot', 'bug', 'turret-a', 'turret-b'] }; // turned down before the page existed
+let pool = { denied: ['bug', 'turret-a', 'turret-b', 'turret-c', 'turret-d'] }; // the sprites Derrick turned down
 try { pool = JSON.parse(fs.readFileSync(POOL_FILE, 'utf8')); } catch { /* keep the default */ }
 
 function buildState() {
