@@ -59,9 +59,11 @@ The default crew lives in [`agents.example.json`](agents.example.json):
 | `ebay` | Bay | eBay Resale | |
 | `fb-marketplace` | Market | FB Marketplace | |
 
-With the Tech Dungeon pack every worker gets its own sprite: the enemy mobs first (crawler, spider
-walker, two turrets), then the hover NPC, then the eight player characters. Sprites only repeat
-(tinted with the agent's name-tag color) once all 13 are in use. The boss is the big mech.
+Every worker gets its own sprite from the approved pool, in manifest order, and sprites only repeat
+(tinted with the agent's name-tag color) once every approved one is in use. Open **SPRITES** in the
+header (`/gallery.html`) to see every look in your pack animated (idle, working, walking) and approve
+or deny each one; denials are saved in `data/pool.json` and apply to the station immediately. An
+agent's `look` can also be a sprite key such as `"crawler"`. The boss is the big mech.
 
 Copy it to `agents.json` (gitignored) to rename agents, move them between projects, set models,
 change name-tag colors or pick looks. Agents that share a `project` share a chamber; a new project

@@ -95,6 +95,8 @@ footer { padding: 4px 14px; font-size: 11px; color: var(--muted); border-top: 1p
 footer a { color: var(--muted); }
 #camBtn.on { background: #14304f; border-color: var(--accent); color: var(--accent); }
 #camBtn { font-family: var(--pixel); font-size: 11px; }
+a.btn { font-family: var(--pixel); font-size: 11px; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 4px 10px; text-decoration: none; }
+a.btn:hover { border-color: var(--accent); }
 
 /* ---- map HUD for recordings: money counter top-left, win cards bottom-left ---- */
 .live { top: 12px; }

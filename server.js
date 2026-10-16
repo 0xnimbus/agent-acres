@@ -67,12 +67,18 @@ const RATINGS_FILE = path.join(DATA, 'ratings.json');
 let ratings = {};
 try { ratings = JSON.parse(fs.readFileSync(RATINGS_FILE, 'utf8')); } catch { /* none yet */ }
 
+// Which character looks workers may use. Denied keys come from the sprite approval page.
+const POOL_FILE = path.join(DATA, 'pool.json');
+let pool = { denied: ['robot', 'bug', 'turret-a', 'turret-b'] }; // turned down before the page existed
+try { pool = JSON.parse(fs.readFileSync(POOL_FILE, 'utf8')); } catch { /* keep the default */ }
+
 function buildState() {
   const s = R.emptyState();
   const evs = rosterEvents().concat(demoOn ? mergeByTs(realEvents, demoEvents) : realEvents);
   for (const ev of evs) R.apply(s, ev);
   s.demo = demoOn;
   s.ratings = ratings;
+  s.pool = pool;
   s.serverTime = Date.now();
   return s;
 }
@@ -230,6 +236,19 @@ const server = http.createServer((req, res) => {
       fs.writeFile(RATINGS_FILE, JSON.stringify(ratings), () => {});
       broadcast('rating', { id: j.id, stars: ratings[j.id] || 0 });
       send(res, 200, { ok: true });
+    });
+  }
+  if (p === '/api/pool' && req.method === 'POST') {
+    return readBody(req, (body) => {
+      let j;
+      try { j = JSON.parse(body); } catch { return send(res, 400, { ok: false, error: 'body is not JSON' }); }
+      if (typeof j.key !== 'string' || typeof j.denied !== 'boolean') return send(res, 400, { ok: false, error: 'need { key, denied: true|false }' });
+      const set = new Set(pool.denied);
+      if (j.denied) set.add(j.key); else set.delete(j.key);
+      pool = { denied: [...set] };
+      fs.writeFile(POOL_FILE, JSON.stringify(pool, null, 2), () => {});
+      broadcast('pool', pool);
+      send(res, 200, { ok: true, pool });
     });
   }
   if (p === '/api/state') return send(res, 200, buildState());

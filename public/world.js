@@ -447,18 +447,25 @@ const World = (() => {
 
   // Every worker gets its own sprite: explicit looks are kept, everyone else takes the
   // next look nobody uses yet. Only once all looks are taken do repeats start (tinted).
-  let lookMap = new Map(), lookKey = '';
+  // Only looks approved on the sprite page (/gallery.html) are in the pool.
+  let lookMap = new Map(), lookKey = '', pool = [];
   function assignLooks(state) {
+    const denied = (state.pool && state.pool.denied) || [];
     const workers = state.order.filter((id) => state.agents[id].role !== 'boss');
-    const key = workers.map((id) => id + ':' + state.agents[id].look).join('|');
+    const key = denied.join(',') + '#' + workers.map((id) => id + ':' + state.agents[id].look).join('|');
     if (key === lookKey) return;
     lookKey = key;
+    pool = art.looks.filter((l) => !denied.includes(l.key));
+    if (!pool.length) pool = art.looks.slice();
+    tinted.clear();
     lookMap = new Map();
-    const n = art.looks.length;
+    const n = pool.length;
     const used = new Set();
     for (const id of workers) {
-      const l = state.agents[id].look;
-      if (Number.isInteger(l) && !used.has(l)) { lookMap.set(id, l); used.add(l); }
+      const want = state.agents[id].look;
+      // look can be a sprite key ("crawler") or a number into the approved pool
+      const l = typeof want === 'string' ? pool.findIndex((x) => x.key === want) : want;
+      if (Number.isInteger(l) && l >= 0 && l < n && !used.has(l)) { lookMap.set(id, l); used.add(l); }
     }
     let next = 0, extra = 0;
     for (const id of workers) {
@@ -472,7 +479,7 @@ const World = (() => {
   function lookIndex(a) { return lookMap.has(a.id) ? lookMap.get(a.id) : (Number.isInteger(a.look) ? a.look : 0); }
 
   function lookFor(a) {
-    const looks = art.looks;
+    const looks = pool.length ? pool : art.looks;
     const li = lookIndex(a);
     const base = looks[((li % looks.length) + looks.length) % looks.length];
     if (li < looks.length) return base;
@@ -807,7 +814,7 @@ const World = (() => {
     return h ? h + ':' + p(m) + ':' + p(ss) : p(m) + ':' + p(ss);
   }
 
-  return { init, onEvent, setSelected, fmtDur, frameCanvas, zoomAt, setAuto, getAuto, fx, moneyOf, assignLooks, lookOf: lookIndex };
+  return { init, onEvent, setSelected, fmtDur, frameCanvas, zoomAt, setAuto, getAuto, fx, moneyOf, assignLooks, lookOf: (a) => (pool[lookIndex(a)] ? pool[lookIndex(a)].key : '') + ':' + lookIndex(a) };
 
   // Draw a sprite frame into a small canvas, used for crew portraits.
   function frameCanvas(a, index, size) {

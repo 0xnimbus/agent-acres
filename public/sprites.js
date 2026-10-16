@@ -34,7 +34,8 @@ const Sprites = (() => {
       roles[role] = m.sprites && m.sprites[role] ? fromManifestSprite(sheets, m.sprites[role]) : placeholder.roles[role];
     }
     const fps = Object.assign({ idle: 2, work: 6, walk: 8 }, m.characterFps || {});
-    const looks = (m.characters || []).filter((c) => sheets[c.sheet]).map((c) => ({
+    const looks = (m.characters || []).filter((c) => sheets[c.sheet]).map((c, i) => ({
+      key: c.key || 'look-' + i, name: c.name || c.key || 'Look ' + (i + 1),
       idle: fromManifestSprite(sheets, { sheet: c.sheet, cell: c.cell, frames: c.idle, fps: fps.idle }),
       work: fromManifestSprite(sheets, { sheet: c.sheet, cell: c.cell, frames: c.work, fps: fps.work }),
       walk: fromManifestSprite(sheets, { sheet: c.sheet, cell: c.cell, frames: c.walk, fps: fps.walk }),
@@ -103,7 +104,7 @@ const Sprites = (() => {
     roles.capsule = sheet(32, 32, 1, (g) => { px(g, '#5b6b8c', 11, 6, 10, 22); px(g, '#e8eef8', 13, 18, 6, 6); });
 
     const LOOK_COLORS = ['#3a8ee6', '#e2483d', '#4caf50', '#9aa5b8', '#f5a623', '#bd10e0', '#50e3c2', '#e94e77'];
-    const looks = LOOK_COLORS.map((body) => {
+    const looks = LOOK_COLORS.map((body, li) => {
       const person = (g, arm, leg, bob) => {
         const y = 6 + bob;
         px(g, '#1b1f33', 12, y + 22, 8, 2); // shadow-ish feet base
@@ -115,6 +116,7 @@ const Sprites = (() => {
         px(g, '#1b1f33', 14, y + 4, 1, 2); px(g, '#1b1f33', 17, y + 4, 1, 2); // eyes
       };
       return {
+        key: 'placeholder-' + li, name: 'Placeholder ' + (li + 1),
         idle: Object.assign(sheet(32, 32, 2, (g, i) => person(g, 0, 0, i)), { fps: 2 }),
         work: Object.assign(sheet(32, 32, 2, (g, i) => person(g, i ? -2 : 1, 0, 0)), { fps: 6 }),
         walk: Object.assign(sheet(32, 32, 4, (g, i) => person(g, [1, 0, -1, 0][i], [1, 0, -1, 0][i] + 1, i % 2)), { fps: 8 }),
@@ -152,7 +154,7 @@ const Sprites = (() => {
       g.fillRect(0, 0, c.width, c.height);
       return Object.assign({}, spr, { img: c });
     };
-    return { idle: tint(look.idle), work: tint(look.work), walk: tint(look.walk) };
+    return { key: look.key, name: look.name, idle: tint(look.idle), work: tint(look.work), walk: tint(look.walk) };
   }
 
   async function load() {

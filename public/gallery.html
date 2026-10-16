@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sprite Approval</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    body { display: block; overflow: auto; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 18px; }
+    .top { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; flex-wrap: wrap; }
+    .top h1 { font-family: var(--pixel); font-size: 20px; color: #7fa4ff; margin: 0; flex: 1; }
+    .note { color: var(--muted); margin: 0 0 18px; }
+    .section { font-family: var(--pixel); font-size: 12px; letter-spacing: 1.5px; color: var(--accent); margin: 22px 0 10px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+    .card { border: 1px solid var(--line); border-radius: 8px; background: rgba(17,27,72,.55); padding: 12px; transition: opacity .2s; }
+    .card.denied { opacity: .45; border-color: #5a2430; }
+    .card.approved { border-color: #2c6b3c; }
+    .card h3 { font-family: var(--pixel); font-size: 13px; margin: 0 0 2px; }
+    .card .who { font-size: 12px; color: var(--muted); min-height: 16px; }
+    .anims { display: flex; gap: 8px; margin: 10px 0; }
+    .anim { flex: 1; text-align: center; }
+    .anim canvas { width: 72px; height: 72px; image-rendering: pixelated; background: #070c24; border: 1px solid var(--line); border-radius: 4px; }
+    .anim.big canvas { width: 128px; height: 128px; }
+    .anim span { display: block; font-family: var(--pixel); font-size: 9px; color: var(--muted); margin-top: 3px; }
+    .acts { display: flex; gap: 8px; }
+    .acts button { flex: 1; font-family: var(--pixel); font-size: 11px; padding: 6px; }
+    .acts .yes.on { background: #1f3b26; border-color: var(--ok); color: var(--ok); }
+    .acts .no.on { background: #3f1d22; border-color: var(--err); color: var(--err); }
+    .count { font-family: var(--pixel); font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <h1>SPRITE APPROVAL</h1>
+      <span class="count" id="count"></span>
+      <a class="btn" href="/">BACK TO STATION</a>
+    </div>
+    <p class="note">Every character sprite in your art pack, animated. Approved sprites are handed out to workers, one each, before any repeats. Denied ones are never used. Changes apply to the station right away.</p>
+    <div class="section">WORKERS</div>
+    <div class="grid" id="grid"></div>
+    <div class="section">BOSS</div>
+    <div class="grid" id="boss"></div>
+  </div>
+  <script src="/sprites.js"></script>
+  <script src="/gallery.js"></script>
+</body>
+</html>

@@ -90,6 +90,12 @@
       renderAll();
       if (ev.type === 'task.done') toast(ev);
     });
+    es.addEventListener('pool', (m) => {
+      if (!state) return;
+      state.pool = JSON.parse(m.data);
+      portraits.clear();
+      renderCrew();
+    });
     es.addEventListener('rating', (m) => {
       if (!state) return;
       const r = JSON.parse(m.data);
