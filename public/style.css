@@ -32,6 +32,9 @@ ul { list-style: none; margin: 0; padding: 0; }
 .crew li:hover, .crew li.sel { background: var(--panel-2); }
 .crew .sw { grid-row: span 3; border-radius: 2px; }
 .crew .name { font-weight: 600; }
+.crew li.group { display: block; cursor: default; padding: 8px 2px 2px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+.crew li.group:hover { background: none; }
+.crew .model { color: #f5c542; font-size: 11px; }
 .crew .biz { color: var(--muted); font-size: 12px; }
 .crew .task { grid-column: 2 / 4; color: var(--text); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .crew .task.idle { color: var(--muted); }

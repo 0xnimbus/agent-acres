@@ -82,7 +82,17 @@
 
   function renderCrew() {
     $('crewCount').textContent = state.order.length;
-    $('crew').innerHTML = state.order.map((id) => {
+    // HQ first, then one group per project chamber
+    const proj = (a) => (a.role === 'boss' ? 'HQ' : a.project || a.business || 'Other');
+    const groups = [];
+    for (const id of state.order) {
+      const p = proj(state.agents[id]);
+      let g = groups.find((x) => x.name === p);
+      if (!g) groups.push(g = { name: p, ids: [] });
+      g.ids.push(id);
+    }
+    groups.sort((x, y) => (y.name === 'HQ') - (x.name === 'HQ'));
+    $('crew').innerHTML = groups.map((g) => '<li class="group">' + esc(g.name === 'HQ' ? '★ HQ' : g.name) + '</li>' + g.ids.map((id) => {
       const a = state.agents[id];
       const timerStart = a.status === 'working' && a.task ? a.task.startedAt : a.since;
       const task = a.status === 'working' && a.task
@@ -91,11 +101,11 @@
       const pct = a.task && a.task.pct != null ? '<div class="bar"><i style="width:' + a.task.pct + '%"></i></div>' : '';
       return '<li data-id="' + esc(id) + '" class="' + (id === selected ? 'sel' : '') + '">' +
         '<span class="sw" style="background:' + esc(a.color || '#6b7899') + '"></span>' +
-        '<div><span class="name">' + esc(a.name) + '</span> <span class="pill ' + a.status + '">' + a.status.toUpperCase() + '</span><div class="biz">' + esc(a.business) + '</div></div>' +
+        '<div><span class="name">' + esc(a.name) + '</span> <span class="pill ' + a.status + '">' + a.status.toUpperCase() + '</span><div class="biz">' + esc(a.business) + (a.model ? ' <span class="model">' + esc(a.model) + '</span>' : '') + '</div></div>' +
         '<div class="meta"><div class="timer" data-since="' + timerStart + '">' + World.fmtDur(now() - timerStart) + '</div><div class="biz">' + a.doneCount + ' done</div></div>' +
         task + pct + '</li>';
-    }).join('');
-    $('crew').querySelectorAll('li').forEach((li) => li.addEventListener('click', () => select(li.dataset.id)));
+    }).join('')).join('');
+    $('crew').querySelectorAll('li[data-id]').forEach((li) => li.addEventListener('click', () => select(li.dataset.id)));
   }
 
   function renderLists() {

@@ -44,7 +44,8 @@ function rosterEvents() {
     const roster = JSON.parse(fs.readFileSync(ROSTER_FILE, 'utf8'));
     return (roster.agents || []).map((a, i) => ({
       id: 'roster-' + a.id, ts: 0, type: 'agent.hello', agent: a.id,
-      name: a.name, business: a.business, look: a.look != null ? a.look : i, color: a.color,
+      name: a.name, business: a.business, project: a.project, model: a.model, role: a.role,
+      look: a.look != null ? a.look : i, color: a.color,
     }));
   } catch (e) {
     console.warn('[acres] could not read roster ' + ROSTER_FILE + ': ' + e.message);

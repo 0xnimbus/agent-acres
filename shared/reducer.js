@@ -8,7 +8,7 @@
   'use strict';
 
   const EVENT_TYPES = [
-    'agent.hello',    // register or update an agent: { agent, name?, business?, look?, color? }
+    'agent.hello',    // register or update an agent: { agent, name?, business?, project?, model?, role?, look?, color? }
     'task.start',     // { agent, task?, title, detail? }
     'task.progress',  // { agent, task?, note, pct? }
     'task.done',      // { agent, task?, title?, result?, url?, value? }
@@ -39,7 +39,7 @@
     let a = state.agents[id];
     if (!a) {
       a = state.agents[id] = {
-        id, name: id, business: '', look: null, color: null,
+        id, name: id, business: '', project: '', model: '', role: '', look: null, color: null,
         status: 'idle', task: null, since: ts, doneCount: 0, failCount: 0,
         workMs: 0, lastNote: '', demo: false,
       };
@@ -68,9 +68,14 @@
         if (str(ev.business)) a.business = clip(ev.business, 80);
         if (ev.look != null) a.look = ev.look;
         if (str(ev.color)) a.color = clip(ev.color, 20);
+        if (str(ev.project)) a.project = clip(ev.project, 40);
+        if (str(ev.model)) a.model = clip(ev.model, 40);
+        if (str(ev.role)) a.role = clip(ev.role, 20);
         break;
       case 'task.start':
         stopWork(a, ts);
+        if (str(ev.model)) a.model = clip(ev.model, 40);
+        if (str(ev.project)) a.project = clip(ev.project, 40);
         a.status = 'working';
         a.task = { id: ev.task || ev.id, title: clip(ev.title, 140), detail: clip(ev.detail, 400) || '', startedAt: ts, pct: null };
         a.since = ts;

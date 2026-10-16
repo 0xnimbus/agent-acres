@@ -39,7 +39,13 @@ const Sprites = (() => {
       work: fromManifestSprite(sheets, { sheet: c.sheet, cell: c.cell, frames: c.work, fps: fps.work }),
       walk: fromManifestSprite(sheets, { sheet: c.sheet, cell: c.cell, frames: c.walk, fps: fps.walk }),
     }));
-    return { roles, looks: looks.length ? looks : placeholder.looks, name: m.name, credit: m.credit, url: m.url, placeholder: false };
+    const b = m.boss;
+    const boss = b ? {
+      idle: fromManifestSprite(sheets, { sheet: b.sheet, cell: b.cell, frames: b.idle, fps: fps.idle * 2 }),
+      work: fromManifestSprite(sheets, { sheet: b.sheet, cell: b.cell, frames: b.work, fps: fps.work }),
+      walk: fromManifestSprite(sheets, { sheet: b.sheet, cell: b.cell, frames: b.walk, fps: fps.walk }),
+    } : placeholder.boss;
+    return { roles, looks: looks.length ? looks : placeholder.looks, boss, name: m.name, credit: m.credit, url: m.url, placeholder: false };
   }
 
   // ---- placeholder art (original, procedural, free to redistribute) --------
@@ -102,7 +108,23 @@ const Sprites = (() => {
         walk: Object.assign(sheet(32, 32, 4, (g, i) => person(g, [1, 0, -1, 0][i], [1, 0, -1, 0][i] + 1, i % 2)), { fps: 8 }),
       };
     });
-    return { roles, looks, name: 'Placeholder art', placeholder: true };
+    // The boss: a chunky 64x64 mech with a glowing visor.
+    const mech = (g, arm, leg, bob, glow) => {
+      const y = 6 + bob;
+      px(g, '#2b3350', 18 + leg, y + 38, 8, 18); px(g, '#2b3350', 38 - leg, y + 38, 8, 18); // legs
+      px(g, '#1b1f33', 16 + leg, y + 54, 12, 4); px(g, '#1b1f33', 36 - leg, y + 54, 12, 4);
+      px(g, '#3e4a68', 12, y + 12, 40, 28); px(g, '#56658a', 14, y + 14, 36, 6); // body
+      px(g, glow, 20, y + 24, 24, 4); // chest light
+      px(g, '#3e4a68', 4, y + 16 + arm, 8, 18); px(g, '#3e4a68', 52, y + 16 - arm, 8, 18); // arms
+      px(g, glow, 6, y + 32 + arm, 4, 3); px(g, glow, 54, y + 32 - arm, 4, 3);
+      px(g, '#56658a', 22, y, 20, 13); px(g, '#1b1f33', 24, y + 4, 16, 5); px(g, glow, 26, y + 5, 12, 3); // head + visor
+    };
+    const boss = {
+      idle: Object.assign(sheet(64, 64, 2, (g, i) => mech(g, 0, 0, i, '#f5c542')), { fps: 2 }),
+      work: Object.assign(sheet(64, 64, 4, (g, i) => mech(g, [0, 2, 0, -2][i], 0, 0, ['#f5c542', '#ffe08a', '#f5c542', '#ffd060'][i])), { fps: 6 }),
+      walk: Object.assign(sheet(64, 64, 4, (g, i) => mech(g, [2, 0, -2, 0][i], [2, 0, -2, 0][i], i % 2, '#f5c542')), { fps: 8 }),
+    };
+    return { roles, looks, boss, name: 'Placeholder art', placeholder: true };
   }
 
   // Recolor a look so agents beyond the pack's looks stay distinguishable.

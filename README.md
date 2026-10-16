@@ -1,7 +1,8 @@
 # Agent Acres
 
-A pixel-art office where you watch your AI agents work. Every agent gets a character, a desk, a
-wall screen and a name plate. When an agent starts a task it walks to its desk, its screen lights
+A pixel-art office where you watch your AI agents work. Each project gets its own walled chamber,
+arranged around a middle **HQ** chamber where the boss agent (the big mech) runs the crew. Inside a
+chamber every agent gets a character, a desk, a wall screen and a name plate. When an agent starts a task it walks to its desk, its screen lights
 up and a run timer starts; when it finishes, the result lands in **Finished work** and the agent
 wanders off to the lounge until the next job.
 
@@ -30,17 +31,20 @@ Open <http://127.0.0.1:8790>. Use the **Demo** button to switch the simulator on
 
 The default crew lives in [`agents.example.json`](agents.example.json):
 
-| id | name | business |
-| --- | --- | --- |
-| `thumbnails` | Thumbs | Fiverr thumbnail design |
-| `clipping` | Clipper | Fiverr long-form to shorts |
-| `geo-agency` | Geo | AI visibility (GEO) agency |
-| `mobile-games` | Pixel | Mobile game development |
-| `ebay` | Bay | eBay resale |
-| `fb-marketplace` | Market | Facebook Marketplace resale |
+| id | name | chamber (project) | model |
+| --- | --- | --- | --- |
+| `boss` | Boss | HQ (middle, `"role": "boss"`) | Claude Opus 5 |
+| `thumbnails` | Thumbs | Fiverr Thumbnails | |
+| `clipping` | Clipper | Fiverr Clipping | |
+| `geo-agency` | Geo | GEO Agency | |
+| `mobile-games` | Pixel | Mobile Games | |
+| `ebay` | Bay | eBay Resale | |
+| `fb-marketplace` | Market | FB Marketplace | |
 
-Copy it to `agents.json` (gitignored) to rename agents, change name-tag colors or pick looks.
-Agents that are not in the roster appear automatically the first time they send an event.
+Copy it to `agents.json` (gitignored) to rename agents, move them between projects, set models,
+change name-tag colors or pick looks. Agents that share a `project` share a chamber; a new project
+gets a new chamber automatically. Agents that are not in the roster appear the first time they
+send an event (send `agent.hello` with a `project` to put them in the right chamber).
 
 ## Reporting work from an agent
 
@@ -48,7 +52,7 @@ Every event is a JSON object with a `type` and an `agent` id.
 
 | type | fields | what the farm shows |
 | --- | --- | --- |
-| `agent.hello` | `name`, `business`, `look`, `color` | adds or updates the agent |
+| `agent.hello` | `name`, `business`, `project`, `model`, `role`, `look`, `color` | adds or updates the agent (`role: "boss"` puts it in HQ) |
 | `task.start` | `title` (required), `detail`, `task` | walks to the desk, screen on, timer starts |
 | `task.progress` | `note`, `pct` (0-100) | speech bubble, progress bar |
 | `task.done` | `result`, `title`, `url`, `value` | Finished work entry, floating `+$40` |
@@ -130,7 +134,7 @@ A manifest maps roles to sprite sheets. Frames are `[column, row]` in units of `
 
 Roles: `floor`, `floorAccent`, `floorVent`, `wall`, `wallTrim`, `deskWork`, `deskIdle`,
 `screenWork` (64x32), `screenIdle`, `wallMonitor`, `console`, `tank` (32x64), `crate`,
-`crateOpen`, `capsule`. Any role you leave out falls back to the placeholder art. If there are
+`crateOpen`, `capsule`. Add a top-level `"boss"` entry (same shape as a character, any cell size) for the HQ boss. Any role you leave out falls back to the placeholder art. If there are
 more agents than character looks, extra agents reuse a look tinted with their name-tag color.
 
 ## Tests
