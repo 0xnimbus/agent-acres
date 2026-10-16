@@ -19,29 +19,17 @@
   World.init({ art, canvas: $('world'), getState: () => state, now, onSelect: select });
 
   // ---- camera + TikTok mode ------------------------------------------------------
-  const params = new URLSearchParams(location.search);
-  const tiktok = params.get('mode') === 'tiktok';
-  const HOOK_KEY = 'acres.hook';
-  if (tiktok) {
-    document.body.classList.add('tiktok');
-    World.setAuto(true, { tour: true, focusTiles: 9, tourTiles: 14, centerY: 0.5 });
-    let hook = params.get('hook');
-    try { hook = hook || localStorage.getItem(HOOK_KEY); } catch { /* storage blocked */ }
-    const h = $('hook');
-    h.textContent = hook || 'I built 7 AI agents to run 6 businesses';
-    h.contentEditable = 'true';
-    h.addEventListener('input', () => { try { localStorage.setItem(HOOK_KEY, h.textContent); } catch { /* ignore */ } });
-  }
+  // The director camera starts on: it is what makes recordings watchable.
+  // Scroll, drag or CAM: FREE hands control back.
   function setCam(on) {
-    World.setAuto(on, { tour: tiktok });
+    World.setAuto(on);
     $('camBtn').textContent = 'CAM: ' + (on ? 'AUTO' : 'FREE');
     $('camBtn').classList.toggle('on', on);
   }
   $('camBtn').addEventListener('click', () => setCam(!World.getAuto()));
   $('world').addEventListener('mousedown', () => setTimeout(() => setCam(World.getAuto()), 0));
   $('world').addEventListener('wheel', () => setTimeout(() => setCam(World.getAuto()), 0));
-  $('tiktokBtn').addEventListener('click', () => { location.search = '?mode=tiktok'; });
-  $('ttExit').addEventListener('click', () => { location.search = ''; });
+  setCam(true);
 
   // money ticker that counts up instead of jumping
   let shownMoney = 0, targetMoney = 0;
@@ -49,7 +37,7 @@
     if (shownMoney !== targetMoney) {
       const d = targetMoney - shownMoney;
       shownMoney = Math.abs(d) < 1 ? targetMoney : shownMoney + d * 0.12;
-      $('ttMoney').textContent = '$' + Math.round(shownMoney).toLocaleString();
+      $('hudMoney').textContent = '$' + Math.round(shownMoney).toLocaleString();
     }
     requestAnimationFrame(tickMoney);
   }
@@ -68,7 +56,7 @@
     box.prepend(el);
     while (box.children.length > 3) box.lastChild.remove();
     setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 4200);
-    if (money) { const m = $('ttMoney'); m.classList.remove('bump'); void m.offsetWidth; m.classList.add('bump'); }
+    if (money) { const m = $('hudMoney'); m.classList.remove('bump'); void m.offsetWidth; m.classList.add('bump'); }
   }
 
   function select(id) {
@@ -100,7 +88,7 @@
       AcresReducer.apply(state, ev);
       World.onEvent(ev, state.agents[ev.agent]);
       renderAll();
-      if (tiktok && ev.type === 'task.done') toast(ev);
+      if (ev.type === 'task.done') toast(ev);
     });
     es.addEventListener('rating', (m) => {
       if (!state) return;
@@ -154,8 +142,7 @@
     const total = agents.reduce((n, a) => n + a.doneCount, 0);
     const today = state.done.filter((d) => d.ts >= startOfDay());
     targetMoney = today.reduce((n, d) => n + World.moneyOf(d.value), 0);
-    $('ttStats').innerHTML = esc(today.length + ' JOBS DONE TODAY') + '<br>' + esc(working + '/' + agents.length + ' AGENTS WORKING') +
-      (state.demo ? '<br><span style="color:#f5c542">SIMULATED (DEMO)</span>' : '');
+    $('hudStats').textContent = today.length + ' JOBS TODAY \u00b7 ' + working + '/' + agents.length + ' WORKING';
     $('commander').innerHTML = '<span class="hex">⬢</span><div><small>COMMANDER</small><b>Lv ' + level(total).lv + '</b></div>';
     const btn = $('demoBtn');
     btn.textContent = 'DEMO: ' + (state.demo ? 'ON' : 'OFF');
