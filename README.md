@@ -60,8 +60,8 @@ The default crew lives in [`agents.example.json`](agents.example.json):
 | `fb-marketplace` | Market | FB Marketplace | |
 
 With the Tech Dungeon pack every worker gets its own sprite: the enemy mobs first (crawler, spider
-walker, robot, bug, four turrets), then the hover NPC, then the eight player characters. Sprites
-only repeat (tinted with the agent's name-tag color) once all 17 are in use. The boss is the big mech.
+walker, two turrets), then the hover NPC, then the eight player characters. Sprites only repeat
+(tinted with the agent's name-tag color) once all 13 are in use. The boss is the big mech.
 
 Copy it to `agents.json` (gitignored) to rename agents, move them between projects, set models,
 change name-tag colors or pick looks. Agents that share a `project` share a chamber; a new project

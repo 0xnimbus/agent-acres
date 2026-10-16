@@ -45,14 +45,10 @@
     "crateOpen":   { "sheet": "props", "cell": [32, 32], "frames": [[13, 6]] },
     "capsule":     { "sheet": "props", "cell": [32, 32], "frames": [[11, 7], [12, 7], [13, 7], [14, 7]], "fps": 2 }
   },
-  "_characters": "Looks 0-7 are the pack's enemy mobs, 8 is the hover NPC, 9-16 are the player characters. Workers take the next unused look automatically.",
+  "_characters": "Looks 0-3 are enemy mobs (crawler, spider walker, two turrets), 4 is the hover NPC, 5-12 are the player characters. The robot, bug and first two turrets were removed from the pool by request. Workers take the next unused look automatically.",
   "characters": [
     { "_mob": "crawler", "sheet": "mobs", "cell": [32, 32], "idle": [[0, 0], [1, 0], [2, 0], [3, 0]], "work": [[0, 2], [1, 2], [2, 2], [3, 2]], "walk": [[0, 1], [1, 1], [2, 1], [3, 1]] },
     { "_mob": "spider walker", "sheet": "mobs", "cell": [32, 32], "idle": [[0, 6], [1, 6], [2, 6], [3, 6]], "work": [[0, 9], [1, 9], [2, 9], [3, 9]], "walk": [[0, 8], [1, 8], [2, 8], [3, 8]] },
-    { "_mob": "robot", "sheet": "mobs", "cell": [32, 32], "idle": [[0, 12], [2, 12], [3, 12]], "work": [[0, 14], [1, 14], [2, 14], [3, 14]], "walk": [[0, 13], [1, 13], [2, 13], [3, 13]] },
-    { "_mob": "bug", "sheet": "mobs", "cell": [32, 32], "idle": [[0, 34], [1, 34], [2, 34], [3, 34]], "work": [[0, 36], [1, 36], [2, 36], [3, 36]], "walk": [[0, 35], [1, 35], [2, 35], [3, 35]] },
-    { "_mob": "turret A", "sheet": "mobs", "cell": [32, 32], "idle": [[0, 17], [1, 17]], "work": [[0, 18], [1, 18], [2, 18], [3, 18]], "walk": [[0, 18], [1, 18], [2, 18], [3, 18]] },
-    { "_mob": "turret B", "sheet": "mobs", "cell": [32, 32], "idle": [[0, 21], [1, 21]], "work": [[0, 22], [1, 22], [2, 22], [3, 22]], "walk": [[0, 22], [1, 22], [2, 22], [3, 22]] },
     { "_mob": "turret C", "sheet": "mobs", "cell": [32, 32], "idle": [[0, 25], [1, 25]], "work": [[0, 26], [1, 26], [2, 26], [3, 26]], "walk": [[0, 26], [1, 26], [2, 26], [3, 26]] },
     { "_mob": "turret D", "sheet": "mobs", "cell": [32, 32], "idle": [[0, 29], [1, 29]], "work": [[0, 30], [1, 30], [2, 30], [3, 30]], "walk": [[0, 30], [1, 30], [2, 30], [3, 30]] },
     { "_mob": "hover npc", "sheet": "npc", "cell": [32, 32], "idle": [[0, 1], [0, 0], [1, 0], [2, 0], [3, 0], [4, 0]], "work": [[0, 2], [1, 2]], "walk": [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]] },
