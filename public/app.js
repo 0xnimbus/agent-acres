@@ -19,8 +19,7 @@
   World.init({ art, canvas: $('world'), getState: () => state, now, onSelect: select });
 
   // ---- camera + TikTok mode ------------------------------------------------------
-  // The director camera starts on: it is what makes recordings watchable.
-  // Scroll, drag or CAM: FREE hands control back.
+  // You drive the camera (scroll to zoom, drag to pan). CAM: AUTO turns on the follow camera.
   function setCam(on) {
     World.setAuto(on);
     $('camBtn').textContent = 'CAM: ' + (on ? 'AUTO' : 'FREE');
@@ -29,7 +28,7 @@
   $('camBtn').addEventListener('click', () => setCam(!World.getAuto()));
   $('world').addEventListener('mousedown', () => setTimeout(() => setCam(World.getAuto()), 0));
   $('world').addEventListener('wheel', () => setTimeout(() => setCam(World.getAuto()), 0));
-  setCam(true);
+  setCam(false);
 
   // money ticker that counts up instead of jumping
   let shownMoney = 0, targetMoney = 0;
