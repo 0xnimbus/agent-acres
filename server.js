@@ -44,7 +44,7 @@ function rosterEvents() {
     const roster = JSON.parse(fs.readFileSync(ROSTER_FILE, 'utf8'));
     return (roster.agents || []).map((a, i) => ({
       id: 'roster-' + a.id, ts: 0, type: 'agent.hello', agent: a.id,
-      name: a.name, business: a.business, project: a.project, model: a.model, role: a.role,
+      name: a.name, business: a.business, project: a.project, model: a.model, role: a.role, script: a.script,
       look: a.look, color: a.color,
     }));
   } catch (e) {
@@ -77,6 +77,7 @@ function buildState() {
   const evs = rosterEvents().concat(demoOn ? mergeByTs(realEvents, demoEvents) : realEvents);
   for (const ev of evs) R.apply(s, ev);
   s.demo = demoOn;
+  if (demoOn) s.commanderLevel = demo.DEMO_COMMANDER_LEVEL;
   s.ratings = ratings;
   s.pool = pool;
   s.serverTime = Date.now();
@@ -142,9 +143,13 @@ setInterval(() => { for (const res of clients) res.write(': ping\n\n'); }, 20000
 
 // ---- demo ------------------------------------------------------------------
 const sim = demo.createSimulator((ev) => ingest(ev, 'demo'));
+function startDemo() {
+  demoEvents = demo.seedToday(buildState(), Date.now()).map((ev, i) => Object.assign(ev, { id: 'day-' + i, demo: true }));
+  sim.start(buildState());
+}
 function setDemo(on) {
   demoOn = !!on;
-  if (demoOn) sim.start(buildState()); else { sim.stop(); demoEvents = []; }
+  if (demoOn) startDemo(); else { sim.stop(); demoEvents = []; }
   broadcast('snapshot', buildState());
 }
 
@@ -264,7 +269,7 @@ const server = http.createServer((req, res) => {
 
   if (p.startsWith('/assets/')) return serveFile(res, ASSETS, decodeURIComponent(p.slice('/assets/'.length)));
   if (p === '/shared/reducer.js') return serveFile(res, path.join(ROOT, 'shared'), 'reducer.js');
-  if (p === '/lib/demo.js') return serveFile(res, path.join(ROOT, 'lib'), 'demo.js');
+  if (p === '/lib/demo.js' || p === '/lib/tasks.js') return serveFile(res, path.join(ROOT, 'lib'), p.slice(5));
   return serveFile(res, PUBLIC, p === '/' ? 'index.html' : decodeURIComponent(p.slice(1)));
 });
 
@@ -274,5 +279,5 @@ server.listen(PORT, HOST, () => {
   console.log('[acres] Agent Acres on http://' + (HOST === '0.0.0.0' ? 'localhost' : HOST) + ':' + PORT + (demoOn ? '  (demo mode on)' : ''));
   console.log('[acres] POST events to /api/events or append JSON lines to ' + path.relative(process.cwd(), INBOX_FILE));
   console.log('[acres] art: ' + (manifest().placeholder ? 'placeholder (run "npm run art -- <path to pack>" to use your pack)' : 'assets/manifest.json'));
-  if (demoOn) sim.start(buildState());
+  if (demoOn) startDemo();
 });

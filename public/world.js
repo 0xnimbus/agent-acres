@@ -12,6 +12,8 @@ const World = (() => {
   const HQ = 'HQ';
   // Room slots in a 3-wide grid, filled around the middle (1,1) which is HQ.
   const RING = [[0, 0], [1, 0], [2, 0], [0, 1], [2, 1], [1, 2], [0, 2], [2, 2]];
+  // Each room gets its own neon color (HQ is gold).
+  const ROOM_COLORS = ['#38e1ff', '#ff4fa3', '#8b6bff', '#4cff8f', '#ff9f3d', '#ffe14d', '#3d8bff', '#ff5e5e', '#45ffd8'];
 
   let art = null;
   let canvas, ctx;
@@ -206,6 +208,21 @@ const World = (() => {
         if (floor[vy] && floor[vy][vx] === 1 && tiles[vy][vx] === 'floor') tiles[vy][vx] = rr() < 0.5 ? 'floorVent' : 'floorGrate';
       }
       rm.lights = [{ x: (x + 0.5) * T, c: rm.boss ? 'gold' : 'blue' }, { x: (x + w - 1.5) * T, c: rm.boss ? 'gold' : 'green' }];
+      rm.color = rm.boss ? '#ffd65a' : ROOM_COLORS[hash(rm.name) % ROOM_COLORS.length];
+      // furnish the side margins (the pods take the middle): tall pieces up top, small ones below
+      if (!rm.boss) {
+        const tall = ['tank', 'tankGreen', 'tankEmpty', 'serverRack'];
+        const small = ['console', 'capsule', 'crate', 'crateOpen', 'console', 'capsule'];
+        for (const [sx, side] of [[x + 0.15, 0], [x + w - 1.15, 1]]) {
+          let yy = y + 1.1;
+          decor(tall[Math.floor(rr() * tall.length)], sx, yy);
+          yy += 2.2;
+          while (yy < y + h - 1.6) { decor(small[Math.floor(rr() * small.length)], sx, yy); yy += 1.25; }
+        }
+      }
+      // wall panels: a row of small lit fixtures along the top wall
+      rm.panels = [];
+      for (let px = x + 1.6; px < x + w - 1.6; px += 1.35) rm.panels.push({ x: Math.round(px * T), f: Math.floor(rr() * 12) });
     }
     for (let yy = 0; yy < hT; yy++) for (let xx = 0; xx < wT; xx++) {
       if (floor[yy][xx] === 3) tiles[yy][xx] = 'floorPanel';
@@ -217,7 +234,10 @@ const World = (() => {
     const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
     for (let i = 0; i < (wT * hT) / 3; i++) stars.push({ x: rnd() * wT * T, y: rnd() * hT * T, s: rnd() < 0.12 ? 2 : 1, tw: rnd() * 6.28, b: 0.35 + rnd() * 0.65 });
 
-    return { key: layoutKey(state), RW, RH, wT, hT, w: wT * T, h: hT * T, rooms, halls, pods, floor, tiles, stars };
+    const nebula = [];
+    const NEB = ['120,70,255', '40,160,255', '255,60,170', '30,220,200'];
+    for (let i = 0; i < 6; i++) nebula.push({ x: rnd() * wT * T, y: rnd() * hT * T, r: (6 + rnd() * 10) * T, c: NEB[i % NEB.length], a: 0.10 + rnd() * 0.08 });
+    return { key: layoutKey(state), RW, RH, wT, hT, w: wT * T, h: hT * T, rooms, halls, pods, floor, tiles, stars, nebula };
   }
 
   // Standby routine: an idle worker still looks busy. It spends most of its time
@@ -229,6 +249,20 @@ const World = (() => {
     return (beat + hashStr(a.id)) % 3 !== 0;              // two beats at the desk, one away
   }
   const busyLooking = (a) => a.status === 'working' || (a.status === 'idle' && standbyAtDesk(a));
+  // Real work = a task that came from a real event (not demo, not a standby dummy job).
+  const isReal = (a) => a.status === 'working' && a.task && !a.task.demo;
+
+  // Standby "dummy jobs": an idle agent cycles through plausible tasks from its role's
+  // list so the station never looks dead. Purely visual; never stored or counted.
+  function dummyJob(a) {
+    const list = (self.AcresTasks && AcresTasks.listFor(a)) || [];
+    if (!list.length || a.status !== 'idle') return null;
+    const h = hashStr(a.id);
+    const dur = 25 + (h % 26);                                  // 25-50 s per dummy job
+    const t = Date.now() / 1000 + (h % 211);
+    const slot = Math.floor(t / dur);
+    return { title: list[hashStr(a.id + ':' + slot) % list.length], slot, startedAt: (slot * dur - (h % 211)) * 1000 };
+  }
   function targetFor(a) {
     const pod = layout.pods[a.id];
     if (a.status === 'idle' && !standbyAtDesk(a)) return Object.assign({ kind: 'idle' }, pod.idle);
@@ -423,8 +457,16 @@ const World = (() => {
   }
 
   function step(dt) {
+    const st = getState();
     for (const e of ents.values()) {
       e.t += dt;
+      // a new standby dummy job pops a grey thought bubble
+      const a = st && st.agents[e.id];
+      const dj = a && dummyJob(a);
+      if (dj && dj.slot !== e.dummySlot) {
+        if (e.dummySlot != null) e.bubble = { text: dj.title, until: performance.now() + 3500, dummy: true };
+        e.dummySlot = dj.slot;
+      }
       if (!e.path.length) continue;
       const p = e.path[0];
       const dx = p.x - e.x, dy = p.y - e.y;
@@ -434,6 +476,15 @@ const World = (() => {
       if (d <= move) { e.x = p.x; e.y = p.y; e.path.shift(); if (!e.path.length) { e.at = e.goal; e.facing = e.at === 'desk' ? -1 : 1; } }
       else { e.x += (dx / d) * move; e.y += (dy / d) * move; }
     }
+  }
+
+  function hexRgb(hex) {
+    const n = parseInt(String(hex || '#9cc7ff').slice(1), 16);
+    return ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255);
+  }
+  function blitFrame(spr, i, x, y) {
+    const f = spr.frames[i];
+    ctx.drawImage(spr.img, f.sx, f.sy, f.w, f.h, x, y, f.w, f.h);
   }
 
   function frameOf(spr, time, offset) {
@@ -530,7 +581,14 @@ const World = (() => {
     ctx.imageSmoothingEnabled = false;
     const R = art.roles;
 
-    // space
+    // space: a few soft nebula clouds, then the stars
+    for (const n of layout.nebula) {
+      const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r);
+      g.addColorStop(0, 'rgba(' + n.c + ',' + n.a + ')');
+      g.addColorStop(1, 'rgba(' + n.c + ',0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(n.x - n.r, n.y - n.r, n.r * 2, n.r * 2);
+    }
     for (const s of layout.stars) {
       ctx.globalAlpha = s.b * (0.6 + 0.4 * Math.sin(time * 1.5 + s.tw));
       ctx.fillStyle = s.s > 1 ? '#bcd3ff' : '#ffffff';
@@ -647,8 +705,9 @@ const World = (() => {
       if (a.status !== 'working') continue;
       const cx = p.boss ? p.work.x : p.desk.x + 30, cy = p.boss ? p.work.y - 24 : p.desk.y + 22;
       const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, p.boss ? 90 : 56);
-      g.addColorStop(0, 'rgba(255,214,120,.30)');
-      g.addColorStop(1, 'rgba(255,214,120,0)');
+      const col = isReal(a) ? '90,255,140' : '255,214,120';     // green = real job, warm = demo
+      g.addColorStop(0, 'rgba(' + col + ',' + (isReal(a) ? '.42' : '.30') + ')');
+      g.addColorStop(1, 'rgba(' + col + ',0)');
       ctx.fillStyle = g;
       ctx.fillRect(cx - 100, cy - 100, 200, 200);
     }
@@ -665,6 +724,23 @@ const World = (() => {
         blit(busyLooking(a) ? R.wallMonitor : R.wallMonitorOff, time, p.desk.x + 16, y - T + 2, { offset: (p.px0 % 5) * 0.37 });
       }
     }
+    // color wash on the floor and a neon strip along the top wall in the room's color
+    const rgb = hexRgb(rm.color);
+    const wash = ctx.createLinearGradient(0, y, 0, y + h);
+    wash.addColorStop(0, 'rgba(' + rgb + ',.13)');
+    wash.addColorStop(1, 'rgba(' + rgb + ',.04)');
+    ctx.fillStyle = wash;
+    for (let ty = rm.y; ty < rm.y + rm.h; ty++) for (let tx = rm.x; tx < rm.x + rm.w; tx++) if (isFloor(tx, ty)) ctx.fillRect(tx * T, ty * T, T, T);
+    const pulse = 0.75 + 0.25 * Math.sin(time * 2 + rm.x);
+    ctx.save();
+    ctx.shadowColor = rm.color; ctx.shadowBlur = 8;
+    ctx.fillStyle = 'rgba(' + rgb + ',' + pulse + ')';
+    ctx.fillRect(x + 4, y - 3, w - 8, 2);
+    ctx.restore();
+    for (const pn of rm.panels || []) {
+      if (!R.wallPanel) break;
+      blitFrame(R.wallPanel, pn.f % R.wallPanel.frames.length, pn.x, y - T - 14);
+    }
     // wall lights with a pool of light below
     for (const l of rm.lights || []) {
       const col = l.c === 'gold' ? '255,214,120' : l.c === 'green' ? '120,255,170' : '120,170,255';
@@ -678,7 +754,7 @@ const World = (() => {
     // room sign on the wall
     ctx.font = '700 7px ui-monospace, Menlo, Consolas, monospace';
     ctx.textAlign = 'center';
-    label(rm.boss ? '★ HQ' : rm.name.toUpperCase(), x + w / 2, y - T - 14, rm.boss ? '#f5c542' : '#9cc7ff', 'rgba(8,12,30,.9)');
+    label(rm.boss ? '★ HQ' : rm.name.toUpperCase(), x + w / 2, y - T - 14, rm.boss ? '#f5c542' : rm.color, 'rgba(8,12,30,.9)');
   }
 
   function character(a, e, index, time) {
@@ -691,6 +767,12 @@ const World = (() => {
     const rx = p.boss ? 20 : 8;
     ctx.fillStyle = 'rgba(0,0,0,.35)';
     ctx.beginPath(); ctx.ellipse(e.x, e.y - 1, rx, rx * 0.38, 0, 0, Math.PI * 2); ctx.fill();
+    if (isReal(a)) {
+      const pulse = 0.55 + 0.45 * Math.sin(time * 4);
+      ctx.strokeStyle = 'rgba(90,255,140,' + pulse + ')';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.ellipse(e.x, e.y - 1, rx + 4, rx * 0.38 + 2, 0, 0, Math.PI * 2); ctx.stroke();
+    }
     if (sel) {
       ctx.strokeStyle = a.color || '#fff';
       ctx.lineWidth = 1;
@@ -705,15 +787,17 @@ const World = (() => {
     const x = Math.round(p.tag.x), y = Math.round(p.tag.y);
     ctx.font = '700 7px ui-monospace, Menlo, Consolas, monospace';
     ctx.textAlign = 'center';
-    const name = a.name.toUpperCase();
+    const lead = a.role === 'lead';
+    const name = (lead ? '★ ' : '') + a.name.toUpperCase();
     const nw = ctx.measureText(name).width + 8;
     ctx.fillStyle = highlight ? 'rgba(30,44,90,.97)' : 'rgba(8,12,30,.92)';
     roundRect(x - nw / 2, y - 7, nw, 10, 2); ctx.fill();
-    ctx.strokeStyle = a.color || '#5a78c8'; ctx.lineWidth = 0.75; ctx.stroke();
+    if (isReal(a)) { ctx.strokeStyle = '#5aff8c'; ctx.lineWidth = 1.4; ctx.shadowColor = '#5aff8c'; ctx.shadowBlur = 6; ctx.stroke(); ctx.shadowBlur = 0; }
+    else { ctx.strokeStyle = lead ? '#f5c542' : a.color || '#5a78c8'; ctx.lineWidth = lead ? 1.1 : 0.75; ctx.stroke(); }
     ctx.fillStyle = '#e8f0ff';
     ctx.fillText(name, x, y + 0.6);
     let text, color;
-    if (a.status === 'working') { text = 'RUN ' + fmtShort(now() - (a.task ? a.task.startedAt : a.since)); color = '#7ee08a'; }
+    if (a.status === 'working') { text = (isReal(a) ? 'LIVE ' : 'RUN ') + fmtShort(now() - (a.task ? a.task.startedAt : a.since)); color = isReal(a) ? '#5aff8c' : '#7ee08a'; }
     else if (a.status === 'error') { text = 'ERROR'; color = '#ff6b6b'; }
     else { text = 'STANDBY ' + fmtShort(now() - a.since); color = '#8ea0c8'; }
     ctx.font = '700 6px ui-monospace, Menlo, Consolas, monospace';
@@ -740,10 +824,10 @@ const World = (() => {
     ctx.font = '500 6px system-ui, sans-serif';
     const w = ctx.measureText(t).width + 8;
     const bx = Math.round(Math.max(4, Math.min(layout.w - w - 4, x - w / 2))), by = y - 12;
-    ctx.fillStyle = '#f4f6fb';
+    ctx.fillStyle = e.bubble.dummy ? 'rgba(200,210,235,.82)' : '#f4f6fb';
     roundRect(bx, by, w, 10, 3); ctx.fill();
     ctx.beginPath(); ctx.moveTo(x - 2, by + 10); ctx.lineTo(x + 2, by + 10); ctx.lineTo(x, by + 13); ctx.fill();
-    ctx.fillStyle = '#1b1f33';
+    ctx.fillStyle = e.bubble.dummy ? '#4a5578' : '#1b1f33';
     ctx.textAlign = 'left';
     ctx.fillText(t, bx + 4, by + 7.3);
   }
@@ -823,7 +907,7 @@ const World = (() => {
     return h ? h + ':' + p(m) + ':' + p(ss) : p(m) + ':' + p(ss);
   }
 
-  return { init, onEvent, setSelected, fmtDur, frameCanvas, zoomAt, setAuto, getAuto, fx, moneyOf, assignLooks, lookOf: (a) => (pool[lookIndex(a)] ? pool[lookIndex(a)].key : '') + ':' + lookIndex(a) };
+  return { init, onEvent, setSelected, fmtDur, frameCanvas, zoomAt, setAuto, getAuto, fx, moneyOf, dummyJob, isReal, assignLooks, lookOf: (a) => (pool[lookIndex(a)] ? pool[lookIndex(a)].key : '') + ':' + lookIndex(a) };
 
   // Draw a sprite frame into a small canvas, used for crew portraits.
   function frameCanvas(a, index, size) {

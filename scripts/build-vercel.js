@@ -12,7 +12,7 @@ fs.cpSync(path.join(ROOT, 'public'), OUT, { recursive: true });
 fs.mkdirSync(path.join(OUT, 'shared'), { recursive: true });
 fs.copyFileSync(path.join(ROOT, 'shared', 'reducer.js'), path.join(OUT, 'shared', 'reducer.js'));
 fs.mkdirSync(path.join(OUT, 'lib'), { recursive: true });
-fs.copyFileSync(path.join(ROOT, 'lib', 'demo.js'), path.join(OUT, 'lib', 'demo.js'));
+for (const f of ['demo.js', 'tasks.js']) fs.copyFileSync(path.join(ROOT, 'lib', f), path.join(OUT, 'lib', f));
 const assets = path.join(ROOT, 'assets');
 if (fs.existsSync(path.join(assets, 'manifest.json'))) {
   fs.cpSync(assets, path.join(OUT, 'assets'), { recursive: true });

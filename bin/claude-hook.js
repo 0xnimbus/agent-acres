@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 // Claude Code hook: reports what Claude sessions are doing to Agent Acres. Each
-// project folder is a room with a "Claude" worker; a thread (session) you come
-// back to gets its own little worker in that room from its second message on.
+// project folder is a room, and every Claude thread (session) is its own worker there.
 //
 // Wire it up in a settings.json "hooks" block for these events:
 //   SessionStart, UserPromptSubmit, Notification, Stop, SessionEnd
@@ -34,6 +33,19 @@ const FILLER = /^(hey|hi|ok(ay)?|so|please|can you|could you|would you|i want( y
 
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
 const clip = (s, n) => String(s || '').replace(/\s+/g, ' ').trim().slice(0, n);
+// Prompts from Claude project threads arrive wrapped in an envelope (<wake>, relays,
+// system reminders). Keep only what the person actually wrote.
+function humanText(prompt) {
+  let t = String(prompt || '');
+  const trig = t.match(/<message[^>]*trigger="true"[^>]*>([\s\S]*?)<\/message>/);
+  if (trig) t = trig[1];
+  else {
+    const cited = [...t.matchAll(/<cited[^>]*author="user"[^>]*>([\s\S]*?)<\/cited>/g)].pop();
+    if (cited) t = cited[1];
+  }
+  t = t.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, ' ').replace(/<[^>]+>/g, ' ');
+  return t.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+}
 
 function threadName(prompt) {
   let t = clip(prompt, 200);
@@ -67,15 +79,13 @@ async function main() {
   sess.last = Date.now();
   if (h.hook_event_name === 'UserPromptSubmit') {
     sess.prompts++;
-    if (!sess.name) sess.name = threadName(h.prompt);
+    if (!sess.name) sess.name = threadName(humanText(h.prompt));
   }
   saveState(st);
 
-  // A thread used more than once gets its own worker; otherwise it is the room's Claude.
-  const own = sess.prompts >= 2;
-  const agent = own ? slug('thread-' + sid.slice(0, 8)) : slug('claude-' + project) || 'claude';
-  const hello = { type: 'agent.hello', agent, name: own ? sess.name : 'Claude', project,
-    business: own ? 'Claude thread on ' + project : 'Claude Code on ' + project };
+  // Every Claude thread (session) is its own worker in its project's room.
+  const agent = slug('thread-' + sid.slice(0, 8)) || 'thread';
+  const hello = { type: 'agent.hello', agent, name: sess.name || 'New thread', project, business: 'Claude thread on ' + project, script: 'claude' };
 
   const events = [];
   switch (h.hook_event_name) {
@@ -83,7 +93,7 @@ async function main() {
       events.push(hello);
       break;
     case 'UserPromptSubmit':
-      events.push(hello, { type: 'task.start', agent, task: sid, title: clip(h.prompt, 120) || 'New request' });
+      events.push(hello, { type: 'task.start', agent, task: sid, title: clip(humanText(h.prompt), 120) || 'New request' });
       break;
     case 'Notification':
       events.push({ type: 'task.progress', agent, task: sid, note: clip(h.message, 120) || 'Waiting for you' });

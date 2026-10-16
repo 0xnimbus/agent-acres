@@ -19,7 +19,7 @@
   ];
 
   const FEED_MAX = 200;
-  const DONE_MAX = 200;
+  const DONE_MAX = 1000;
 
   function emptyState() {
     return { agents: {}, order: [], feed: [], done: [], seq: 0 };
@@ -70,6 +70,7 @@
     const ts = ev.ts || Date.now();
     const a = ensureAgent(state, ev.agent, ts);
     if (ev.demo) a.demo = true;
+    if (ev.type === 'agent.hello' && typeof ev.script === 'string') a.script = clip(ev.script, 40);
     state.seq++;
     switch (ev.type) {
       case 'agent.hello':
@@ -86,7 +87,7 @@
         if (str(ev.model)) a.model = clip(ev.model, 40);
         if (str(ev.project)) a.project = clip(ev.project, 40);
         a.status = 'working';
-        a.task = { id: ev.task || ev.id, title: clip(ev.title, 140), detail: clip(ev.detail, 400) || '', startedAt: ts, pct: null };
+        a.task = { id: ev.task || ev.id, title: clip(ev.title, 140), detail: clip(ev.detail, 400) || '', startedAt: ts, pct: null, demo: !!ev.demo };
         a.since = ts;
         a.lastNote = '';
         pushFeed(state, ev, a.task.title, 'start');

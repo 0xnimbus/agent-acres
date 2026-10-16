@@ -43,7 +43,11 @@
     "tank":        { "sheet": "props", "cell": [32, 64], "frames": [[0, 3], [1, 3], [2, 3], [3, 3]], "fps": 4 },
     "crate":       { "sheet": "props", "cell": [32, 32], "frames": [[11, 6]] },
     "crateOpen":   { "sheet": "props", "cell": [32, 32], "frames": [[13, 6]] },
-    "capsule":     { "sheet": "props", "cell": [32, 32], "frames": [[11, 7], [12, 7], [13, 7], [14, 7]], "fps": 2 }
+    "capsule":     { "sheet": "props", "cell": [32, 32], "frames": [[11, 7], [12, 7], [13, 7], [14, 7]], "fps": 2 },
+    "tankGreen":   { "sheet": "props", "cell": [32, 64], "frames": [[0, 4], [1, 4], [2, 4], [3, 4]], "fps": 3 },
+    "tankEmpty":   { "sheet": "props", "cell": [32, 64], "frames": [[0, 5]] },
+    "serverRack":  { "sheet": "props", "cell": [32, 32], "frames": [[11, 5], [12, 5]], "fps": 1 },
+    "wallPanel":   { "sheet": "props", "cell": [32, 32], "frames": [[6, 6], [7, 6], [8, 6], [9, 6], [6, 7], [7, 7], [8, 7], [9, 7], [6, 8], [7, 8], [8, 8], [9, 8]] }
   },
   "_characters": "Every look the pack offers. Which ones workers may use is decided on the sprite approval page (/gallery.html); denials live in data/pool.json.",
   "characters": [

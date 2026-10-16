@@ -117,7 +117,9 @@
   async function setDemoLocal(on) {
     if (on && !sim) {
       sim = AcresDemo.createSimulator((ev) => applyEvent(Object.assign({ id: 'demo-' + Math.random().toString(36).slice(2), ts: now(), demo: true }, ev)));
+      AcresDemo.seedToday(state, now()).forEach((ev, i) => AcresReducer.apply(state, Object.assign(ev, { id: 'day-' + i, demo: true })));
       state.demo = true;
+      state.commanderLevel = AcresDemo.DEMO_COMMANDER_LEVEL;
       sim.start(state);
       renderAll();
     } else if (!on && sim) {
@@ -193,12 +195,12 @@
     const today = state.done.filter((d) => d.ts >= startOfDay());
     targetMoney = today.reduce((n, d) => n + World.moneyOf(d.value), 0);
     $('hudStats').textContent = today.length + ' JOBS TODAY \u00b7 ' + working + '/' + agents.length + ' WORKING';
-    $('commander').innerHTML = '<span class="hex">⬢</span><div><small>COMMANDER</small><b>Lv ' + level(total).lv + '</b></div>';
+    $('commander').innerHTML = '<span class="hex">⬢</span><div><small>COMMANDER</small><b>Lv ' + (state.commanderLevel || level(total).lv) + '</b></div>';
     const btn = $('demoBtn');
-    btn.textContent = 'DEMO: ' + (state.demo ? 'ON' : 'OFF');
-    btn.classList.toggle('on', !!state.demo);
+    // While the demo runs the button reads CHAT and switches it off.
+    btn.textContent = state.demo ? 'CHAT' : 'DEMO';
     const banner = $('banner');
-    banner.hidden = !state.demo;
+    banner.hidden = true;
     banner.textContent = 'DEMO MODE: SIMULATED WORK';
   }
 
@@ -228,14 +230,17 @@
       const a = state.agents[id];
       const lv = level(a.doneCount);
       const timerStart = a.status === 'working' && a.task ? a.task.startedAt : a.since;
+      const dj = World.dummyJob(a);
       const task = a.status === 'working' && a.task
         ? '<div class="task" title="' + esc(a.task.title) + '">' + esc(a.task.title) + (a.lastNote ? ' <span class="count">· ' + esc(a.lastNote) + '</span>' : '') + '</div>'
-        : '<div class="task idle">' + esc(a.status === 'error' ? 'Error: ' + a.lastNote : (a.lastNote || a.business || 'Waiting for work')) + '</div>';
-      return '<li data-id="' + esc(id) + '" class="agent' + (id === selected ? ' sel' : '') + '">' +
+        : a.status === 'idle' && dj
+          ? '<div class="task idle" title="Standby job, not real work">○ ' + esc(dj.title) + '</div>'
+          : '<div class="task idle">' + esc(a.status === 'error' ? 'Error: ' + a.lastNote : (a.lastNote || a.business || 'Waiting for work')) + '</div>';
+      return '<li data-id="' + esc(id) + '" class="agent' + (id === selected ? ' sel' : '') + (World.isReal(a) ? ' real' : '') + '">' +
         '<div class="portrait" data-portrait="' + esc(id) + '"><i style="background:' + esc(a.color || '#6b7899') + '"></i></div>' +
-        '<div><span class="name" style="color:' + esc(a.color || '#e6ecff') + '">' + esc(a.name.toUpperCase()) + '</span>' + (a.model ? ' <span class="model">' + esc(a.model) + '</span>' : '') + '</div>' +
+        '<div><span class="name" style="color:' + esc(a.color || '#e6ecff') + '">' + esc(a.name.toUpperCase()) + '</span>' + (a.model ? ' <span class="model">' + esc(a.model) + '</span>' : a.role === 'lead' ? ' <span class="model">★ ROOM BOSS</span>' : '') + '</div>' +
         '<div class="lvl">Lv ' + lv.lv + '</div>' +
-        '<div class="st ' + a.status + '">' + (a.status === 'idle' ? 'STANDBY' : a.status.toUpperCase()) + '</div>' +
+        '<div class="st ' + a.status + '">' + (a.status === 'idle' ? 'STANDBY' : World.isReal(a) ? 'LIVE JOB' : a.status.toUpperCase()) + '</div>' +
         '<div class="timer" data-since="' + timerStart + '">' + World.fmtDur(now() - timerStart) + '</div>' +
         '<div class="xp"><i style="width:' + (a.task && a.task.pct != null ? a.task.pct : lv.pct) + '%"></i></div>' +
         task + '</li>';

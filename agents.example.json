@@ -1,13 +1,23 @@
 {
-  "_comment": "Copy to agents.json (gitignored) to change your crew. project = which chamber the agent works in (agents sharing a project share a chamber). role \"boss\" puts the agent in the middle HQ chamber as the big mech. model is shown on the name plate. look = optional character look: with the Tech Dungeon pack 0-3 are enemy mobs (crawler, spider walker, two turrets), 4 is the hover NPC and 5-12 are the player characters. Leave it out and each worker gets the next unused look; repeats (tinted with the agent's color) only start once every look is taken. color = name tag color.",
+  "_comment": "Copy to agents.json (gitignored) to change your crew. project = which room the agent works in (agents sharing a project share a room). script = which task list its standby jobs come from (see lib/tasks.js). role \"boss\" puts the agent in the middle HQ room as the big mech; role \"lead\" makes it its room's boss. model is shown on the name plate. look = optional sprite key from the SPRITES page; leave it out and each worker gets the next unused sprite. color = name tag color.",
   "agents": [
-    {"id": "boss", "name": "Boss", "business": "Runs the crew", "role": "boss", "model": "Claude Opus 5", "color": "#f5c542"},
-    {"id": "thumbnails", "name": "Thumbs", "business": "Fiverr thumbnail design", "project": "Fiverr Thumbnails", "color": "#f5a623"},
-    {"id": "clipping", "name": "Clipper", "business": "Fiverr long-form to shorts", "project": "Fiverr Clipping", "color": "#e94e77"},
-    {"id": "geo-agency", "name": "Geo", "business": "AI visibility (GEO) agency", "project": "GEO Agency", "color": "#4a90d9"},
-    {"id": "mobile-games", "name": "Pixel", "business": "Mobile game development", "project": "Mobile Games", "color": "#7ed321"},
-    {"id": "ebay", "name": "Bay", "business": "eBay resale", "project": "eBay Resale", "color": "#bd10e0"},
-    {"id": "fb-marketplace", "name": "Market", "business": "Facebook Marketplace resale", "project": "FB Marketplace", "color": "#50e3c2"},
-    {"id": "job-apps", "name": "Scout", "business": "Job applications", "project": "Job Applications", "color": "#ffd65a"}
+    {"id": "boss", "name": "Boss", "business": "Runs the crew", "role": "boss", "model": "Claude Opus 5", "color": "#f5c542", "script": "boss"},
+    {"id": "thumbnails", "role": "lead", "name": "Thumbs", "business": "Thumbnail designer", "project": "Fiverr Thumbnails", "color": "#f5a623", "script": "thumbnails"},
+    {"id": "clipping", "role": "lead", "name": "Clipper", "business": "Finds the best moments", "project": "Fiverr Clipping", "color": "#e94e77", "script": "clipping"},
+    {"id": "geo-agency", "role": "lead", "name": "Geo", "business": "AI visibility audits", "project": "GEO Agency", "color": "#4a90d9", "script": "geo-agency"},
+    {"id": "mobile-games", "role": "lead", "name": "Pixel", "business": "Game programmer", "project": "Mobile Games", "color": "#7ed321", "script": "mobile-games"},
+    {"id": "ebay", "role": "lead", "name": "Bay", "business": "Listings and pricing", "project": "eBay Resale", "color": "#bd10e0", "script": "ebay"},
+    {"id": "fb-marketplace", "role": "lead", "name": "Market", "business": "Posts and sells items", "project": "FB Marketplace", "color": "#50e3c2", "script": "fb-marketplace"},
+    {"id": "job-apps", "role": "lead", "name": "Scout", "business": "Finds and applies to roles", "project": "Job Applications", "color": "#ffd65a", "script": "job-apps"},
+    {"id": "thumbs-qa", "name": "Proof", "business": "Revisions and quality checks", "project": "Fiverr Thumbnails", "color": "#ffb36b", "script": "thumbnails"},
+    {"id": "clip-editor", "name": "Reel", "business": "Cuts and reframes clips", "project": "Fiverr Clipping", "color": "#ff7aa2", "script": "clipping"},
+    {"id": "clip-captions", "name": "Caps", "business": "Captions and titles", "project": "Fiverr Clipping", "color": "#ff9ec0", "script": "clipping"},
+    {"id": "geo-outreach", "name": "Pitch", "business": "Prospecting and outreach", "project": "GEO Agency", "color": "#7fb6ff", "script": "geo-agency"},
+    {"id": "games-qa", "name": "Patch", "business": "Testing and bug fixes", "project": "Mobile Games", "color": "#a6e86a", "script": "mobile-games"},
+    {"id": "games-store", "name": "Sprite", "business": "Store page and art", "project": "Mobile Games", "color": "#c8f59a", "script": "mobile-games"},
+    {"id": "ebay-ship", "name": "Parcel", "business": "Shipping and buyer messages", "project": "eBay Resale", "color": "#d77cf0", "script": "ebay"},
+    {"id": "fb-scout", "name": "Haggle", "business": "Sources underpriced flips", "project": "FB Marketplace", "color": "#8ff0db", "script": "fb-marketplace"},
+    {"id": "jobs-outreach", "name": "Ping", "business": "Referrals and follow-ups", "project": "Job Applications", "color": "#ffe38f", "script": "job-apps"},
+    {"id": "jobs-prep", "name": "Coach", "business": "Interview prep", "project": "Job Applications", "color": "#fff0b8", "script": "job-apps"}
   ]
 }
