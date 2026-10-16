@@ -207,7 +207,9 @@ const World = (() => {
         const vx = x + 1 + Math.floor(rr() * (w - 2)), vy = y + h - 1;
         if (floor[vy] && floor[vy][vx] === 1 && tiles[vy][vx] === 'floor') tiles[vy][vx] = rr() < 0.5 ? 'floorVent' : 'floorGrate';
       }
-      rm.lights = [{ x: (x + 0.5) * T, c: rm.boss ? 'gold' : 'blue' }, { x: (x + w - 1.5) * T, c: rm.boss ? 'gold' : 'green' }];
+      rm.lights = rm.boss
+        ? [{ x: (x + 4.6) * T, c: 'gold' }, { x: (x + w - 5.6) * T, c: 'gold' }]
+        : [{ x: (x + 0.5) * T, c: 'blue' }, { x: (x + w - 1.5) * T, c: 'green' }];
       rm.color = rm.boss ? '#ffd65a' : ROOM_COLORS[hash(rm.name) % ROOM_COLORS.length];
       // furnish the side margins (the pods take the middle): tall pieces up top, small ones below
       if (!rm.boss) {
@@ -219,10 +221,26 @@ const World = (() => {
           yy += 2.2;
           while (yy < y + h - 1.6) { decor(small[Math.floor(rr() * small.length)], sx, yy); yy += 1.25; }
         }
+      } else {
+        // HQ: tanks and server racks down both walls, a command console row in front
+        // of the boss, supply crates by the door
+        for (const sx of [x + 0.2, x + w - 1.2]) {
+          decor('tank', sx, y + 1.1);
+          let yy = y + 3.3;
+          while (yy < y + h - 2.2) { decor('serverRack', sx, yy); yy += 1.1; }
+          decor('capsule', sx, y + h - 2.1);
+        }
+        decor('tankGreen', x + 1.3, y + 1.1);
+        decor('tankGreen', x + w - 2.3, y + 1.1);
+        const cx = x + w / 2;
+        for (const dx of [-1.5, -0.5, 0.5]) decor('console', cx + dx, y + 3.75);
+        decor('crate', x + 1.4, y + h - 2.0); decor('crateOpen', x + 2.4, y + h - 2.0);
+        decor('crate', x + w - 3.4, y + h - 2.0); decor('capsule', x + w - 2.4, y + h - 2.0);
       }
       // wall panels: a row of small lit fixtures along the top wall
       rm.panels = [];
-      for (let px = x + 1.6; px < x + w - 1.6; px += 1.35) rm.panels.push({ x: Math.round(px * T), f: Math.floor(rr() * 12) });
+      const p0 = rm.boss ? x + 4.6 : x + 1.6, p1 = rm.boss ? x + w - 4.6 : x + w - 1.6;
+      for (let px = p0; px < p1; px += 1.35) rm.panels.push({ x: Math.round(px * T), f: Math.floor(rr() * 12) });
     }
     for (let yy = 0; yy < hT; yy++) for (let xx = 0; xx < wT; xx++) {
       if (floor[yy][xx] === 3) tiles[yy][xx] = 'floorPanel';
@@ -629,7 +647,9 @@ const World = (() => {
     }
     // hazard stripes at hallway mouths
     for (const h of layout.halls) {
-      if (h.w === 2) { blit(R.hazard, time, h.x * T, h.y * T - 6); blit(R.hazard, time, (h.x + 1) * T, h.y * T - 6); }
+      if (h.w === 2) {
+        for (const yy of [h.y, h.y + h.h - 1]) { blit(R.hazard, time, h.x * T, yy * T + 2); blit(R.hazard, time, (h.x + 1) * T, yy * T + 2); }
+      }
     }
 
     for (const rm of layout.rooms) drawRoom(rm, time, state);
@@ -712,12 +732,19 @@ const World = (() => {
       ctx.fillRect(cx - 100, cy - 100, 200, 200);
     }
     if (rm.boss) {
-      blit(anyWorking ? R.screenWork : R.screenIdle, time, x + T * 0.6, y - T + 2);
-      blit(anyWorking ? R.screenWork : R.screenIdle, time + 0.4, x + w - T * 0.6 - 64, y - T + 2);
-      blit(R.tank, time, x + 8, y + 6);
-      blit(R.tank, time + 0.5, x + w - T - 8, y + 6);
-      blit(R.console, time, x + 8, y + h - T - 4);
-      blit(R.console, time + 0.3, x + w - T - 8, y + h - T - 4);
+      blit(anyWorking ? R.screenWork : R.screenIdle, time, x + T * 2.3, y - T + 2);
+      blit(anyWorking ? R.screenWork : R.screenIdle, time + 0.4, x + w - T * 2.3 - 64, y - T + 2);
+      // gold command emblem on the floor under the boss
+      for (const id of rm.agents) {
+        const pb = layout.pods[id];
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,214,90,.55)';
+        for (let i = 0; i < 3; i++) {
+          ctx.lineWidth = i === 0 ? 1.5 : 1;
+          ctx.beginPath(); ctx.ellipse(pb.work.x, pb.work.y - 4, 30 + i * 9, (30 + i * 9) * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
+        }
+        ctx.restore();
+      }
     } else {
       for (const id of rm.agents) {
         const a = state.agents[id], p = layout.pods[id];
@@ -735,7 +762,9 @@ const World = (() => {
     ctx.save();
     ctx.shadowColor = rm.color; ctx.shadowBlur = 8;
     ctx.fillStyle = 'rgba(' + rgb + ',' + pulse + ')';
-    ctx.fillRect(x + 4, y - 3, w - 8, 2);
+    for (let tx = rm.x; tx < rm.x + rm.w; tx++) {
+      if (isFloor(tx, rm.y) && !isFloor(tx, rm.y - 1)) ctx.fillRect(tx * T + (isFloor(tx - 1, rm.y) ? 0 : 4), y - 3, T - (isFloor(tx - 1, rm.y) ? 0 : 4) - (isFloor(tx + 1, rm.y) ? 0 : 4), 2);
+    }
     ctx.restore();
     for (const pn of rm.panels || []) {
       if (!R.wallPanel) break;

@@ -41,9 +41,13 @@ function humanText(prompt) {
   if (trig) t = trig[1];
   else {
     const cited = [...t.matchAll(/<cited[^>]*author="user"[^>]*>([\s\S]*?)<\/cited>/g)].pop();
+    const note = t.match(/<note>([\s\S]*?)<\/note>/);
     if (cited) t = cited[1];
+    else if (note) t = note[1];
   }
   t = t.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, ' ').replace(/<[^>]+>/g, ' ');
+  // drop relay boilerplate lines
+  t = t.split(/\r?\n/).filter((l) => !/^\s*(The (note|messages) below|A message from this project|\[SYSTEM NOTIFICATION)/i.test(l)).join(' ');
   return t.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 }
 
