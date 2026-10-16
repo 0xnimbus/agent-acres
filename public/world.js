@@ -7,7 +7,7 @@
 const World = (() => {
   const T = 32;          // tile size in world pixels
   const POD_W = 4, POD_H = 3;
-  const GAP_X = 4, GAP_Y = 5, MARGIN = 2;
+  const GAP_X = 5, GAP_Y = 5, MARGIN = 4;
   const WALK_SPEED = 70; // world px per second
   const HQ = 'HQ';
   // Room slots in a 3-wide grid, filled around the middle (1,1) which is HQ.
@@ -32,9 +32,28 @@ const World = (() => {
     onSelect = opts.onSelect || onSelect;
     getState = opts.getState;
     now = opts.now || now;
-    canvas.addEventListener('mousemove', (e) => { hoverId = hit(e); canvas.style.cursor = hoverId ? 'pointer' : 'default'; });
+    // wheel to zoom around the cursor, drag to pan, double-click to fit the whole station
+    let drag = null;
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const r = canvas.getBoundingClientRect();
+      zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.15 : 1 / 1.15);
+    }, { passive: false });
+    canvas.addEventListener('mousedown', (e) => { drag = { x: e.clientX, y: e.clientY, px: cam.px, py: cam.py, moved: false }; });
+    window.addEventListener('mouseup', () => { setTimeout(() => { drag = null; }, 0); });
+    canvas.addEventListener('mousemove', (e) => {
+      if (drag && (e.buttons & 1)) {
+        const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+        if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+        cam.px = drag.px + dx; cam.py = drag.py + dy;
+        canvas.style.cursor = 'grabbing';
+        return;
+      }
+      hoverId = hit(e); canvas.style.cursor = hoverId ? 'pointer' : 'grab';
+    });
     canvas.addEventListener('mouseleave', () => { hoverId = null; });
-    canvas.addEventListener('click', (e) => { const id = hit(e); onSelect(id); });
+    canvas.addEventListener('click', (e) => { if (drag && drag.moved) return; const id = hit(e); onSelect(id); });
+    canvas.addEventListener('dblclick', () => { cam.z = 1; cam.px = 0; cam.py = 0; });
     requestAnimationFrame(frame);
   }
 
@@ -58,8 +77,8 @@ const World = (() => {
     const maxN = Math.max(1, ...[...groups.values()].map((g) => g.length));
     const podCols = 2;                                     // rooms always have desks in pairs; spares stay empty
     const podRows = Math.ceil(maxN / podCols);
-    const RW = Math.max(7, podCols * POD_W + 1);          // room interior, tiles
-    const RH = Math.max(4, podRows * POD_H + 1);
+    const RW = podCols * POD_W + 3;                        // room interior, tiles
+    const RH = podRows * POD_H + 2;
 
     const projects = [...groups.keys()];
     const slots = RING.slice();
@@ -69,7 +88,10 @@ const World = (() => {
     const wT = MARGIN * 2 + 3 * RW + 2 * GAP_X;
     const hT = MARGIN * 2 + 2 + gridRows * RH + (gridRows - 1) * GAP_Y + 1;
     const floor = Array.from({ length: hT }, () => new Uint8Array(wT));
-    const fill = (x0, y0, w, h) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) if (floor[y] && x >= 0 && x < wT) floor[y][x] = 1; };
+    const tiles = Array.from({ length: hT }, () => new Array(wT).fill('floor'));
+    // kind: 1 room, 2 hallway, 3 alcove
+    const fill = (x0, y0, w, h, kind) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) if (floor[y] && x >= 0 && x < wT && !floor[y][x]) floor[y][x] = kind || 1; };
+    const cut = (x0, y0, w, h) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) if (floor[y] && x >= 0 && x < wT) floor[y][x] = 0; };
     const roomAt = (c, r) => ({ x: MARGIN + c * (RW + GAP_X), y: MARGIN + 2 + r * (RH + GAP_Y), w: RW, h: RH, c, r });
 
     const rooms = [];
@@ -78,7 +100,7 @@ const World = (() => {
     rooms.push(hq);
     bosses.forEach((id, i) => {
       const cx = (hq.x + RW / 2) * T + (i - (bosses.length - 1) / 2) * 80;
-      const feet = (hq.y + 1) * T + 70;
+      const feet = (hq.y + 1) * T + 82;
       pods[id] = { boss: true, room: hq, work: { x: cx, y: feet }, idle: { x: cx, y: feet }, tag: { x: cx, y: (hq.y + 0.3) * T }, gapY: feet };
     });
 
@@ -92,13 +114,13 @@ const World = (() => {
       room.spares = [];
       for (let k = ids.length; k < podCols * podRows; k++) {
         const px0 = room.x + (RW - podCols * POD_W) / 2 + (k % podCols) * POD_W;
-        const py0 = room.y + 0.5 + Math.floor(k / podCols) * POD_H;
+        const py0 = room.y + 0.6 + Math.floor(k / podCols) * POD_H;
         room.spares.push({ x: Math.round((px0 + 0.6) * T), y: Math.round((py0 + 0.9) * T) });
       }
       ids.forEach((id, k) => {
         const row = Math.floor(k / podCols), col = k % podCols;
         const px0 = room.x + (RW - podCols * POD_W) / 2 + col * POD_W;
-        const py0 = room.y + 0.5 + row * POD_H;
+        const py0 = room.y + 0.6 + row * POD_H;
         const desk = { x: Math.round((px0 + 0.6) * T), y: Math.round((py0 + 0.9) * T) };
         pods[id] = {
           room, px0, py0, desk,
@@ -111,10 +133,10 @@ const World = (() => {
     });
 
     // floors: rooms plus 2-wide hallways linking every room back to HQ
-    for (const rm of rooms) fill(rm.x, rm.y, rm.w, rm.h);
+    for (const rm of rooms) { rm.sides = new Set(); rm.decor = []; fill(rm.x, rm.y, rm.w, rm.h, 1); }
     const halls = [];
-    const linkH = (a, b) => { const y = a.y + Math.floor(a.h / 2) - 1; fill(a.x + a.w, y, b.x - a.x - a.w, 2); halls.push({ x: a.x + a.w, y, w: b.x - a.x - a.w, h: 2 }); };
-    const linkV = (a, b) => { const x = a.x + Math.floor(a.w / 2) - 1; fill(x, a.y + a.h, 2, b.y - a.y - a.h); halls.push({ x, y: a.y + a.h, w: 2, h: b.y - a.y - a.h }); };
+    const linkH = (a, b) => { const y = a.y + Math.floor(a.h / 2) - 1; a.sides.add('right'); b.sides.add('left'); fill(a.x + a.w, y, b.x - a.x - a.w, 2, 2); halls.push({ x: a.x + a.w, y, w: b.x - a.x - a.w, h: 2 }); };
+    const linkV = (a, b) => { const x = a.x + Math.floor(a.w / 2) - 1; a.sides.add('bottom'); b.sides.add('top'); fill(x, a.y + a.h, 2, b.y - a.y - a.h, 2); halls.push({ x, y: a.y + a.h, w: 2, h: b.y - a.y - a.h }); };
     for (const rm of rooms) {
       if (rm.boss) continue;
       const { c, r } = rm;
@@ -126,12 +148,75 @@ const World = (() => {
       else { const side = byCell.get(c + ',1'); if (side) { if (r < 1) linkV(rm, side); else linkV(side, rm); } }
     }
 
+    // ---- shape and texture: every room gets its own cut corners, an alcove on
+    // an outer wall, pillars and floor panels, seeded by its name so it is stable.
+    const hash = (str) => { let h = 2166136261; for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619); return h >>> 0; };
+    for (const rm of rooms) {
+      let rs = hash(rm.name) || 1;
+      const rr = () => { rs = Math.imul(rs ^ (rs >>> 15), 2246822507) >>> 0; rs = (rs ^ (rs >>> 13)) >>> 0; return rs / 4294967296; };
+      const { x, y, w, h } = rm;
+      const decor = (role, tx, ty) => rm.decor.push({ role, x: Math.round(tx * T), y: Math.round(ty * T) });
+      if (rm.boss) {
+        cut(x, y, 2, 1); cut(x + w - 2, y, 2, 1); cut(x, y + h - 1, 2, 1); cut(x + w - 2, y + h - 1, 2, 1);
+      } else {
+        if (rr() < 0.6) cut(x, y, 1, 1);
+        if (rr() < 0.6) cut(x + w - 1, y, 1, 1);
+        if (rr() < 0.5) cut(x, y + h - 1, 1, 1); else decor('pillar', x, y + h - 1);
+        if (rr() < 0.5) cut(x + w - 1, y + h - 1, 1, 1); else decor('pillar', x + w - 1, y + h - 1);
+      }
+      // an alcove on an outer side that has no hallway
+      const below = rooms.some((o) => o !== rm && o.c === rm.c && o.r === rm.r + 1);
+      const sides = [];
+      if (rm.c === 0 && !rm.sides.has('left')) sides.push('left');
+      if (rm.c === 2 && !rm.sides.has('right')) sides.push('right');
+      if (!below && !rm.sides.has('bottom')) sides.push('bottom');
+      if (!rm.boss && sides.length) {
+        const side = sides[Math.floor(rr() * sides.length)];
+        if (side === 'left' || side === 'right') {
+          const ay = y + 1;
+          const ax = side === 'left' ? x - 2 : x + w;
+          fill(ax, ay, 2, Math.min(3, h - 1), 3);
+          decor('tank', ax + 0.5, ay - 0.7);
+          if (h - 1 >= 3) decor('console', ax + 0.5, ay + 1.8);
+        } else {
+          const ax = x + 2 + Math.floor(rr() * (w - 7));
+          fill(ax, y + h, 4, 2, 3);
+          decor('crate', ax, y + h + 0.8); decor('crateOpen', ax + 1, y + h + 0.8); decor('capsule', ax + 3, y + h + 0.8);
+        }
+      }
+      // floor texture: desk platforms, a walkway stripe per pod row, vents and grates
+      rm.walk = [];
+      const platforms = rm.agents.map((id) => pods[id]).filter((p) => p && !p.boss).map((p) => p.desk).concat(rm.spares || []);
+      for (const d of platforms) {
+        const tx = Math.floor(d.x / T), ty = Math.floor(d.y / T);
+        for (let yy = ty; yy < ty + 2; yy++) for (let xx = tx; xx < tx + 3; xx++) if (floor[yy] && floor[yy][xx] === 1) tiles[yy][xx] = 'floorAccent';
+      }
+      if (!rm.boss) {
+        for (let row = 0; row < podRows; row++) {
+          const wy = y + 3 + row * POD_H;
+          for (let xx = x + 1; xx < x + w - 1; xx++) if (floor[wy] && floor[wy][xx] === 1) rm.walk.push({ x: xx, y: wy });
+        }
+      } else {
+        for (let yy = y + 1; yy < y + h - 1; yy++) for (let xx = x + 2; xx < x + w - 2; xx++) tiles[yy][xx] = (xx + yy) % 2 ? 'floorAccent' : 'floor';
+        for (let xx = x + 2; xx < x + w - 2; xx++) rm.walk.push({ x: xx, y: y + h - 1 });
+      }
+      for (let i = 0; i < 3; i++) {
+        const vx = x + 1 + Math.floor(rr() * (w - 2)), vy = y + h - 1;
+        if (floor[vy] && floor[vy][vx] === 1 && tiles[vy][vx] === 'floor') tiles[vy][vx] = rr() < 0.5 ? 'floorVent' : 'floorGrate';
+      }
+      rm.lights = [{ x: (x + 0.5) * T, c: rm.boss ? 'gold' : 'blue' }, { x: (x + w - 1.5) * T, c: rm.boss ? 'gold' : 'green' }];
+    }
+    for (let yy = 0; yy < hT; yy++) for (let xx = 0; xx < wT; xx++) {
+      if (floor[yy][xx] === 3) tiles[yy][xx] = 'floorPanel';
+      else if (floor[yy][xx] === 2) tiles[yy][xx] = (xx + yy) % 3 === 0 ? 'floorGrate' : 'floorAccent';
+    }
+
     const stars = [];
     let seed = 1337;
     const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
     for (let i = 0; i < (wT * hT) / 3; i++) stars.push({ x: rnd() * wT * T, y: rnd() * hT * T, s: rnd() < 0.12 ? 2 : 1, tw: rnd() * 6.28, b: 0.35 + rnd() * 0.65 });
 
-    return { key: layoutKey(state), RW, RH, wT, hT, w: wT * T, h: hT * T, rooms, halls, pods, floor, stars };
+    return { key: layoutKey(state), RW, RH, wT, hT, w: wT * T, h: hT * T, rooms, halls, pods, floor, tiles, stars };
   }
 
   function targetFor(a) {
@@ -181,6 +266,23 @@ const World = (() => {
   // ---- render ----------------------------------------------------------------
   let lastT = performance.now();
   let view = { zoom: 1, ox: 0, oy: 0 };
+  const cam = { z: 1, px: 0, py: 0 }; // user zoom and pan on top of fit-to-screen
+
+  function zoomAt(sx, sy, k) {
+    const nz = Math.max(1, Math.min(6, cam.z * k));
+    // keep the world point under the cursor in place
+    const wx = (sx - view.ox) / view.zoom, wy = (sy - view.oy) / view.zoom;
+    cam.z = nz;
+    const fit = fitZoom();
+    const z = fit * cam.z;
+    const baseOx = Math.floor((view.w - layout.w * z) / 2), baseOy = Math.floor((view.h - layout.h * z) / 2);
+    cam.px = sx - wx * z - baseOx;
+    cam.py = sy - wy * z - baseOy;
+  }
+  function fitZoom() {
+    let zoom = Math.min(view.w / layout.w, view.h / layout.h);
+    return zoom >= 1 ? Math.floor(zoom * 4) / 4 : zoom;
+  }
 
   function frame(t) {
     const dt = Math.min(0.1, (t - lastT) / 1000);
@@ -244,12 +346,14 @@ const World = (() => {
       canvas.width = w * dpr; canvas.height = h * dpr;
       canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
     }
-    let zoom = Math.min(w / layout.w, h / layout.h);
-    zoom = zoom >= 1 ? Math.floor(zoom * 4) / 4 : zoom;
-    view = { zoom, ox: Math.floor((w - layout.w * zoom) / 2), oy: Math.floor((h - layout.h * zoom) / 2), dpr, w, h };
+    let fit = Math.min(w / layout.w, h / layout.h);
+    fit = fit >= 1 ? Math.floor(fit * 4) / 4 : fit;
+    const zoom = fit * cam.z;
+    if (cam.z === 1) { cam.px = 0; cam.py = 0; }
+    view = { zoom, ox: Math.floor((w - layout.w * zoom) / 2 + cam.px), oy: Math.floor((h - layout.h * zoom) / 2 + cam.py), dpr, w, h };
   }
 
-  const isFloor = (x, y) => y >= 0 && y < layout.hT && x >= 0 && x < layout.wT && layout.floor[y][x] === 1;
+  const isFloor = (x, y) => y >= 0 && y < layout.hT && x >= 0 && x < layout.wT && layout.floor[y][x] > 0;
 
   function draw(time, state) {
     resize();
@@ -272,7 +376,21 @@ const World = (() => {
     // floors, then walls derived from the floor shape
     for (let y = 0; y < layout.hT; y++) for (let x = 0; x < layout.wT; x++) {
       if (!isFloor(x, y)) continue;
-      blit((x * 7 + y * 13) % 29 === 0 ? R.floorVent : R.floor, time, x * T, y * T);
+      blit(R[layout.tiles[y][x]] || R.floor, time, x * T, y * T);
+    }
+    // walkway stripes: blue in project rooms, gold in HQ, red while someone in the room has an error
+    for (const rm of layout.rooms) {
+      const err = rm.agents.some((id) => state.agents[id] && state.agents[id].status === 'error');
+      const stripe = err ? R.stripeRed : rm.boss ? R.stripeYellow : R.stripeBlue;
+      for (const c of rm.walk) blit(stripe, time, c.x * T, c.y * T);
+    }
+    // soft shadow along the walls gives the rooms depth
+    ctx.fillStyle = 'rgba(0,0,0,.28)';
+    for (let y = 0; y < layout.hT; y++) for (let x = 0; x < layout.wT; x++) {
+      if (!isFloor(x, y)) continue;
+      if (!isFloor(x, y - 1)) ctx.fillRect(x * T, y * T, T, 7);
+      if (!isFloor(x - 1, y)) ctx.fillRect(x * T, y * T, 5, T);
+      if (!isFloor(x + 1, y)) ctx.fillRect(x * T + T - 5, y * T, 5, T);
     }
     for (let y = 0; y < layout.hT; y++) for (let x = 0; x < layout.wT; x++) {
       if (!isFloor(x, y)) continue;
@@ -295,6 +413,14 @@ const World = (() => {
 
     // desks and characters, back to front
     const drawables = [];
+    for (const rm of layout.rooms) for (const d of rm.decor) {
+      const spr = R[d.role];
+      if (!spr) continue;
+      drawables.push({ y: d.y + spr.frames[0].h - 2, draw: () => {
+        if (d.role === 'pillar') { ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(d.x + 2, d.y + T - 4, T - 4, 6); }
+        blit(spr, time + (d.x % 7) * 0.3, d.x, d.y);
+      } });
+    }
     for (const id of state.order) {
       const a = state.agents[id], p = layout.pods[id];
       if (!p) continue;
@@ -347,7 +473,16 @@ const World = (() => {
         const a = state.agents[id], p = layout.pods[id];
         blit(a.status === 'working' ? R.wallMonitor : R.wallMonitorOff, time, p.desk.x + 16, y - T + 2, { offset: (p.px0 % 5) * 0.37 });
       }
-      blit(R.crate, time, x + 2, y + h - T + 4);
+    }
+    // wall lights with a pool of light below
+    for (const l of rm.lights || []) {
+      const col = l.c === 'gold' ? '255,214,120' : l.c === 'green' ? '120,255,170' : '120,170,255';
+      const g = ctx.createRadialGradient(l.x + 16, y + 4, 2, l.x + 16, y + 4, 46);
+      g.addColorStop(0, 'rgba(' + col + ',.22)');
+      g.addColorStop(1, 'rgba(' + col + ',0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(l.x - 32, y - 20, 96, 70);
+      blit(l.c === 'green' ? R.wallLightGreen : R.wallLight, time, l.x, y - T - 6);
     }
     // room sign on the wall
     ctx.font = '700 7px ui-monospace, Menlo, Consolas, monospace';
@@ -486,7 +621,7 @@ const World = (() => {
     return h ? h + ':' + p(m) + ':' + p(ss) : p(m) + ':' + p(ss);
   }
 
-  return { init, onEvent, setSelected, fmtDur, frameCanvas };
+  return { init, onEvent, setSelected, fmtDur, frameCanvas, zoomAt };
 
   // Draw a sprite frame into a small canvas, used for crew portraits.
   function frameCanvas(a, index, size) {

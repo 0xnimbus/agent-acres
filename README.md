@@ -5,7 +5,7 @@ linked by hallways to the middle **HQ** room where the boss agent (the big mech)
 Inside a room every agent gets a character, a desk with a name tag and a `RUN 0:51` timer, and a
 wall monitor; desks light up while their agent works. The side panels follow StarNet's layout: a
 crew list with portraits and levels, a commander level, and a COMMS feed where each finished job
-has **read the work** and **rate it** buttons. When an agent starts a task it walks to its desk, its screen lights
+has **read the work** and **rate it** buttons. Scroll on the map to zoom, drag to pan, double-click to fit. When an agent starts a task it walks to its desk, its screen lights
 up and a run timer starts; when it finishes, the result lands in **Finished work** and the agent
 wanders off to the lounge until the next job.
 
@@ -135,7 +135,7 @@ A manifest maps roles to sprite sheets. Frames are `[column, row]` in units of `
 }
 ```
 
-Roles: `floor`, `floorAccent`, `floorVent`, `wall`, `wallTrim`, `wallBottom`, `railLeft`, `railRight`, `hazard`, `wallMonitorOff`, `deskWork`, `deskIdle`,
+Roles: `floor`, `floorAccent`, `floorVent`, `wall`, `wallTrim`, `wallBottom`, `railLeft`, `railRight`, `hazard`, `wallMonitorOff`, `floorGrate`, `floorPanel`, `stripeBlue`, `stripeYellow`, `stripeRed`, `pillar`, `wallLight`, `wallLightGreen`, `deskWork`, `deskIdle`,
 `screenWork` (64x32), `screenIdle`, `wallMonitor`, `console`, `tank` (32x64), `crate`,
 `crateOpen`, `capsule`. Add a top-level `"boss"` entry (same shape as a character, any cell size) for the HQ boss. Any role you leave out falls back to the placeholder art. If there are
 more agents than character looks, extra agents reuse a look tinted with their name-tag color.

@@ -5,7 +5,7 @@
 
 const Sprites = (() => {
   const ROLES = ['floor', 'floorAccent', 'floorVent', 'wall', 'wallTrim', 'deskWork', 'deskIdle', 'screenWork', 'screenIdle',
-    'wallMonitor', 'wallMonitorOff', 'wallBottom', 'railLeft', 'railRight', 'hazard', 'console', 'tank', 'crate', 'crateOpen', 'capsule'];
+    'wallMonitor', 'wallMonitorOff', 'wallBottom', 'railLeft', 'railRight', 'hazard', 'console', 'floorGrate', 'floorPanel', 'stripeBlue', 'stripeYellow', 'stripeRed', 'pillar', 'wallLight', 'wallLightGreen', 'tank', 'crate', 'crateOpen', 'capsule'];
 
   function loadImage(src) {
     return new Promise((resolve, reject) => {
@@ -86,6 +86,13 @@ const Sprites = (() => {
     roles.railLeft = sheet(32, 32, 1, (g) => { px(g, '#8fa3c0', 2, 0, 4, 32); px(g, '#56658a', 6, 0, 1, 32); });
     roles.railRight = sheet(32, 32, 1, (g) => { px(g, '#8fa3c0', 26, 0, 4, 32); px(g, '#56658a', 25, 0, 1, 32); });
     roles.hazard = sheet(32, 32, 1, (g) => { for (let x = 0; x < 32; x += 8) { px(g, '#f5c542', x, 26, 4, 4); px(g, '#1b1f33', x + 4, 26, 4, 4); } });
+    const stripe = (c) => sheet(32, 32, 1, (g) => { px(g, '#262b44', 0, 0, 32, 32); px(g, '#2d3352', 1, 1, 30, 30); for (let x = 0; x < 32; x += 8) { px(g, c, x, 2, 4, 3); px(g, c, x + 2, 27, 4, 3); } });
+    roles.stripeBlue = stripe('#3a62d8'); roles.stripeYellow = stripe('#f5c542'); roles.stripeRed = stripe('#d84a5a');
+    roles.floorGrate = sheet(32, 32, 1, (g) => { px(g, '#1b1f33', 0, 0, 32, 32); for (let y = 3; y < 30; y += 4) px(g, '#2d3352', 3, y, 26, 2); });
+    roles.floorPanel = sheet(32, 32, 1, (g) => { px(g, '#262b44', 0, 0, 32, 32); px(g, '#323a5e', 2, 2, 28, 28); for (let y = 6; y < 28; y += 6) px(g, '#7ee0a5', 6, y, 20, 1); });
+    roles.pillar = sheet(32, 32, 1, (g) => { px(g, '#8fa3c0', 2, 0, 28, 30); px(g, '#56658a', 5, 4, 22, 24); px(g, '#2b3350', 2, 30, 28, 2); });
+    roles.wallLight = sheet(32, 32, 1, (g) => { px(g, '#2b3350', 12, 10, 8, 8); px(g, '#9fd3ff', 13, 11, 6, 6); });
+    roles.wallLightGreen = sheet(32, 32, 1, (g) => { px(g, '#2b3350', 12, 10, 8, 8); px(g, '#9cf0c0', 13, 11, 6, 6); });
     roles.console = Object.assign(sheet(32, 32, 2, (g, i) => { px(g, '#2b3350', 2, 8, 28, 22); px(g, i ? '#5fb3f0' : '#3a8ee6', 5, 11, 14, 8); px(g, '#7ee0a5', 22, 11, 5, 8); }), { fps: 2 });
     roles.tank = Object.assign(sheet(32, 64, 2, (g, i) => {
       px(g, '#8fa3c0', 5, 4, 22, 8); px(g, '#6fcf6f', 6, 12, 20, 40); px(g, '#4caf50', 6, 44 - i * 2, 20, 8 + i * 2); px(g, '#8fa3c0', 5, 52, 22, 8);
