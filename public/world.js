@@ -209,7 +209,14 @@ const World = (() => {
       }
       rm.lights = rm.boss
         ? [{ x: (x + 4.6) * T, c: 'gold' }, { x: (x + w - 5.6) * T, c: 'gold' }]
-        : [{ x: (x + 0.5) * T, c: 'blue' }, { x: (x + w - 1.5) * T, c: 'green' }];
+        : (() => {
+          // put the two wall lights on the first and last stretch of real top wall, so a cut
+          // corner never leaves a light hanging past the wall
+          const wallTiles = [];
+          for (let tx = x; tx < x + w; tx++) if (floor[y] && floor[y][tx] && !(floor[y - 1] && floor[y - 1][tx])) wallTiles.push(tx);
+          const a0 = wallTiles[0] ?? x, a1 = wallTiles[wallTiles.length - 1] ?? x + w - 1;
+          return [{ x: a0 * T, c: 'blue' }, { x: a1 * T, c: 'green' }];
+        })();
       rm.color = rm.boss ? '#ffd65a' : ROOM_COLORS[hash(rm.name) % ROOM_COLORS.length];
       // furnish the side margins (the pods take the middle): tall pieces up top, small ones below
       if (!rm.boss) {
@@ -560,10 +567,7 @@ const World = (() => {
     const looks = pool.length ? pool : art.looks;
     const li = lookIndex(a);
     const base = looks[((li % looks.length) + looks.length) % looks.length];
-    if (li < looks.length) return base;
-    const key = li + ':' + (a.color || '');
-    if (!tinted.has(key)) tinted.set(key, Sprites.tintLook(base, a.color || ['#ff8a65', '#ba68c8', '#4dd0e1', '#fff176'][li % 4]));
-    return tinted.get(key);
+    return base; // once every approved sprite is in use, sprites simply repeat (no tinting)
   }
 
   function resize() {
@@ -760,10 +764,15 @@ const World = (() => {
     for (let ty = rm.y; ty < rm.y + rm.h; ty++) for (let tx = rm.x; tx < rm.x + rm.w; tx++) if (isFloor(tx, ty)) ctx.fillRect(tx * T, ty * T, T, T);
     const pulse = 0.75 + 0.25 * Math.sin(time * 2 + rm.x);
     ctx.save();
-    ctx.shadowColor = rm.color; ctx.shadowBlur = 8;
+    // The strip runs along the floor just in front of the top wall (not on the wall art),
+    // stopping short of side walls and cut corners so it never touches a wall.
+    ctx.shadowColor = rm.color; ctx.shadowBlur = 5;
     ctx.fillStyle = 'rgba(' + rgb + ',' + pulse + ')';
     for (let tx = rm.x; tx < rm.x + rm.w; tx++) {
-      if (isFloor(tx, rm.y) && !isFloor(tx, rm.y - 1)) ctx.fillRect(tx * T + (isFloor(tx - 1, rm.y) ? 0 : 4), y - 3, T - (isFloor(tx - 1, rm.y) ? 0 : 4) - (isFloor(tx + 1, rm.y) ? 0 : 4), 2);
+      if (!isFloor(tx, rm.y) || isFloor(tx, rm.y - 1)) continue;
+      const inL = isFloor(tx - 1, rm.y) && !isFloor(tx - 1, rm.y - 1) ? 0 : 10;
+      const inR = isFloor(tx + 1, rm.y) && !isFloor(tx + 1, rm.y - 1) ? 0 : 10;
+      ctx.fillRect(tx * T + inL, y + 8, T - inL - inR, 2);
     }
     ctx.restore();
     for (const pn of rm.panels || []) {
